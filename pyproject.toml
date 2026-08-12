@@ -1,0 +1,13 @@
+[project]
+name = "my-fastapi-app"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dotenv>=0.9.9",
+    "fastapi>=0.141.1",
+    "google>=3.0.0",
+    "google-genai>=2.17.0",
+    "uvicorn>=0.52.1",
+]
