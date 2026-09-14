@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from contextlib import asynccontextmanager
 
 from app.validation import Schema
 from app.worker import Worker
@@ -17,7 +16,7 @@ async def receive_data(data: Schema): # validation fails return an 422 error aut
     return "Successfully added to the queue for processing"
 
 
-# USAGE : uv run uvicorn main:app --reload
+# USAGE : uv run uvicorn app.main:app --reload
 
 # curl -X POST http://localhost:8000/api \
 #   -H "Content-Type: application/json" \

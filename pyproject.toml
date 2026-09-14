@@ -1,5 +1,5 @@
 [project]
-name = "my-fastapi-app"
+name = "llm-gateway"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -7,11 +7,9 @@ requires-python = ">=3.12"
 dependencies = [
     "dotenv>=0.9.9",
     "fastapi>=0.141.1",
-    "google>=3.0.0",
-    "google-genai>=2.17.0",
+    "google-genai>=2.23.0",
     "ollama>=0.6.2",
-    "openrouter>=1.1.139",
+    "openrouter>=1.1.140",
     "pika>=1.4.4",
-    "python-dotenv>=1.2.3",
-    "uvicorn>=0.52.1",
+    "uvicorn>=0.53.0",
 ]

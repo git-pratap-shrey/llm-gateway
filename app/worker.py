@@ -6,13 +6,9 @@ class Worker:
         self.producer = Producer()
         self.producer.send_message(message)
 
-        self.close_connection()
-
     def consume_message(self):
         self.consumer = Consumer()
         self.consumer.start_consuming()
-
-        self.close_connection()
 
 if __name__ == "__main__":
     worker = Worker()
