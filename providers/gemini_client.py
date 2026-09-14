@@ -8,13 +8,13 @@ class GeminiClient:
     def __init__(self):
         self.client = genai.Client()
 
-    def chat(self, model: str, messages: list[dict]):
+    def chat(self, model: str, messages: list[dict]) -> str:
         try:
             response = self.client.models.generate_content(
                 model=model,
                 contents=messages
             )
-            print(response.text)
+            return response
 
         except errors.APIError as e:
             print(f"gemini provider error ({e.code}): {e.message}")

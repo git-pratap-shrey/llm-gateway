@@ -10,13 +10,13 @@ class OpenrouterClient:
             api_key=os.getenv("OPENROUTER_API_KEY")
         )
 
-    def chat(self, model: str, messages: list[dict]):
+    def chat(self, model: str, messages: list[dict]) -> str:
         try:
             response = self.client.chat.send(
                 model=model,
                 messages=messages
             )
-            print(response.choices[0].message.content)
+            return response
 
         except Exception as e:
             print(f"openrouter error: {e}")

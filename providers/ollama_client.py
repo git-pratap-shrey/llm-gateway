@@ -14,14 +14,14 @@ class OllamaClient:
             }
         )
 
-    def chat(self, model : str, messages : list[dict]):
+    def chat(self, model : str, messages : list[dict]) -> str:
         try:
             response = self.client.chat(
                 model=model,
                 messages=messages
             )
 
-            print(response.message.content)
+            return response
 
         except ResponseError as e:
             print(f"Ollama error: {e}")

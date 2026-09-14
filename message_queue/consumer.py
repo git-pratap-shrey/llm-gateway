@@ -1,6 +1,6 @@
 import json
 import pika
-from router import route_message
+from router import router
 
 class Consumer:
     def __init__(self):
@@ -22,7 +22,7 @@ class Consumer:
     def callback(self, ch, method, properties, body):
         print(f"Received: {body.decode()}")
 
-        route_message(json.loads(body.decode()))
+        router().route(json.loads(body.decode()))
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
