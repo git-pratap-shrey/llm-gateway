@@ -4,22 +4,29 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = genai.Client()
+class GeminiClient:
+    def __init__(self):
+        self.client = genai.Client()
 
-model_str = "gemini-5"
-models = client.models.list()
+    def chat(self, model: str, messages: list[dict]):
+        try:
+            response = self.client.models.generate_content(
+                model=model,
+                contents=messages
+            )
+            print(response.text)
 
-if not any(model.name == model_str for model in models):
-    print(f"Model '{model_str}' not found or unsupported")
-    exit()
+        except errors.APIError as e:
+            print(f"gemini provider error ({e.code}): {e.message}")
 
+    def list_models(self):
+        try:
+            models = self.client.models.list()
+            return models
+        except errors.APIError as e:
+            print(f"gemini provider error ({e.code}): {e.message}")
+            return []
 
-try:
-    response = client.models.generate_content(
-        model=model_str,
-        contents="Hello!"
-    )
-    print(response.text)
-
-except errors.APIError as e:
-    print(f"gemini provider error ({e.code}): {e.message}")
+# if not any(model.name == model_str for model in models):
+#     print(f"Model '{model_str}' not found or unsupported")
+#     exit()

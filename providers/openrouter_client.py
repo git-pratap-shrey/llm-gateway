@@ -1,26 +1,22 @@
 from openrouter import OpenRouter
 import os
 
-
 from dotenv import load_dotenv
-
 load_dotenv()
 
-client = OpenRouter(
-    api_key=os.getenv("OPENROUTER_API_KEY")
-)
+class OpenrouterClient: 
+    def __init__(self):
+        self.client = OpenRouter(
+            api_key=os.getenv("OPENROUTER_API_KEY")
+        )
 
-model = "google/gemma-4-31b-it"
+    def chat(self, model: str, messages: list[dict]):
+        try:
+            response = self.client.chat.send(
+                model=model,
+                messages=messages
+            )
+            print(response.choices[0].message.content)
 
-try:
-    response = client.chat.send(
-        model=model,
-        messages=[
-            {"role": "user", "content": "hi"}
-        ]
-    )
-
-    print(response.choices[0].message.content)
-
-except Exception as e:
-    print(f"openrouter error: {e}")
+        except Exception as e:
+            print(f"openrouter error: {e}")

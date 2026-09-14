@@ -487,6 +487,7 @@ dependencies = [
     { name = "google-genai" },
     { name = "ollama" },
     { name = "openrouter" },
+    { name = "pika" },
     { name = "python-dotenv" },
     { name = "uvicorn" },
 ]
@@ -499,6 +500,7 @@ requires-dist = [
     { name = "google-genai", specifier = ">=2.17.0" },
     { name = "ollama", specifier = ">=0.6.2" },
     { name = "openrouter", specifier = ">=1.1.139" },
+    { name = "pika", specifier = ">=1.4.4" },
     { name = "python-dotenv", specifier = ">=1.2.3" },
     { name = "uvicorn", specifier = ">=0.52.1" },
 ]
@@ -529,6 +531,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/20/a4/56b718c7a1268d99cb23ebd476abda14152c727cbdd36e437f72b6249d9b/openrouter-1.1.139.tar.gz", hash = "sha256:178d9a1e086e281950af111a220fbc1c5030594a95cf0b73e1413acdddb28df4", size = 455457, upload-time = "2026-09-11T15:26:48.974Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0f/80/3f7d954454dd8f29664a17acc4229d634726774a8e120bfa05841bb665e2/openrouter-1.1.139-py3-none-any.whl", hash = "sha256:77ab093f67935c7ccf74dbae3087bf08b3645aa1d10a63c5224ab158cd10d1dc", size = 977476, upload-time = "2026-09-11T15:26:47.548Z" },
+]
+
+[[package]]
+name = "pika"
+version = "1.4.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7f/26/54e0b98a7f60b474cb0a6c05ecf048d4bc8c866e10ab1c82bc83865e7421/pika-1.4.4.tar.gz", hash = "sha256:8cfc8b33a5cb16e733bd60cffca9732c0d1d761ecd80a89f34ed7df2cd38d6d6", size = 154713, upload-time = "2026-08-06T21:33:39.836Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7c/f3/921170b78779ac3f8b405cb28fce88acca1562ac114072cbf0a115e19bb9/pika-1.4.4-py3-none-any.whl", hash = "sha256:48de960c97a93b55db06b8be4c53eb977c9c8a2754c57cdae9097abcbd70ce04", size = 165275, upload-time = "2026-08-06T21:33:38.449Z" },
 ]
 
 [[package]]
