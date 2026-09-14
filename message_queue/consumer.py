@@ -1,6 +1,6 @@
 import json
 import pika
-from app.router import route_message
+from router import route_message
 
 class Consumer:
     def __init__(self):

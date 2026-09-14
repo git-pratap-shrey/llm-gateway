@@ -1,5 +1,5 @@
-from app.message_queue.producer import Producer
-from app.message_queue.consumer import Consumer
+from message_queue.producer import Producer
+from message_queue.consumer import Consumer
 
 class Worker:
     def produce_message(self, message):
