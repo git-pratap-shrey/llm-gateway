@@ -1,6 +1,6 @@
 import pika
 
-class producer:
+class Producer:
     def __init__(self):
         self.connection = pika.BlockingConnection(
             pika.ConnectionParameters(host="localhost")

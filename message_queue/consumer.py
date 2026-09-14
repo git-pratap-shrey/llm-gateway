@@ -1,7 +1,7 @@
 import pika
 from router import route_message
 
-class consumer:
+class Consumer:
     def __init__(self):
         self.connection = pika.BlockingConnection(
             pika.ConnectionParameters(host="localhost")
@@ -21,10 +21,8 @@ class consumer:
     def callback(self, ch, method, properties, body):
         print(f"Received: {body.decode()}")
 
-
         route_message(body.decode())
 
-        
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
     def close_connection(self):

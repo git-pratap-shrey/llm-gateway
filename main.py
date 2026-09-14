@@ -1,16 +1,18 @@
 from fastapi import FastAPI
-app = FastAPI()
+from contextlib import asynccontextmanager
 
 from validation import Schema
-from message_queue.producer import producer
+from worker import Worker
+    
+app = FastAPI()
 
 
 @app.post("/api")
 async def receive_data(data: Schema): # validation fails return an 422 error automatically by fastapi.
     data_json = data.model_dump_json()
 
-    mq_producer = producer()
-    mq_producer.send_message(data_json)
+    worker = Worker()
+    worker.produce_message(data_json)
 
     return "Successfully added to the queue for processing"
 
