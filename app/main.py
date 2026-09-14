@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
-from validation import Schema
-from worker import Worker
+from app.validation import Schema
+from app.worker import Worker
     
 app = FastAPI()
 

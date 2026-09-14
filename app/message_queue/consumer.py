@@ -1,5 +1,5 @@
 import pika
-from router import route_message
+from app.router import route_message
 
 class Consumer:
     def __init__(self):
