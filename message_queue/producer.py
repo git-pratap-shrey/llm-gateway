@@ -1,4 +1,5 @@
 import pika
+import json
 
 class Producer:
     def __init__(self):
@@ -8,11 +9,11 @@ class Producer:
         self.channel = self.connection.channel()
         self.channel.queue_declare(queue="tasks", durable=True)
 
-    def send_message(self, message: str):
+    def send_message(self, message: dict):
         self.channel.basic_publish(
             exchange="",
             routing_key="tasks",
-            body=message,
+            body=json.dumps(message),
             properties=pika.BasicProperties(
                 delivery_mode=pika.DeliveryMode.Persistent
             )

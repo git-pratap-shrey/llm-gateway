@@ -1,7 +1,7 @@
 import json
 import pika
-from router import router
-from result_store import add_to_database
+from router import Router
+from result_store import result_store
 
 class Consumer:
     def __init__(self):
@@ -23,11 +23,13 @@ class Consumer:
     def callback(self, ch, method, properties, body):
         print(f"Received: {body.decode()}")
 
-        body["response"] = router().route(body["data"])
-        body["status"] = "completed"
+        payload = json.loads(body.decode())
+        payload["response"] = Router().route(payload["data"])
+        payload["status"] = "completed"
 
-        add_to_database(body)
-
+        print(f"Processed: {payload}")
+        result_store.add_to_database(payload)
+        
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
 

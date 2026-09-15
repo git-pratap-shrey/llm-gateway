@@ -1,19 +1,18 @@
-import uuid
+from uuid6 import uuid7
 
 from fastapi import FastAPI
 
 from validation import Schema
 from worker import Worker
-from router import router
-from result_store import check_status
+from router import Router
+from result_store import result_store
     
 app = FastAPI()
 
-
 @app.post("/api/async")
-async def process_async(data: Schema): # validation fails return an 422 error automatically by fastapi.
+def process_async(data: Schema): # validation fails return an 422 error automatically by fastapi.
 
-    job_id = str(uuid.uuid7())
+    job_id = str(uuid7())
 
     worker = Worker()
     worker.produce_message({
@@ -31,7 +30,7 @@ async def process_async(data: Schema): # validation fails return an 422 error au
 async def process_sync(data: Schema):
     data_dict = data.model_dump()
 
-    response = router().route(data_dict)
+    response = Router().route(data_dict)
 
     return response
 
@@ -39,7 +38,7 @@ async def process_sync(data: Schema):
 
 @app.get("/{job_id}")
 def get_item(job_id: str):
-    return check_status(job_id)
+    return result_store.check_status(job_id)
 
 
 # USAGE : uv run python -m uvicorn main:app --reload
