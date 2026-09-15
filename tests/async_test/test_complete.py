@@ -17,6 +17,11 @@ job_id = response["job_id"]
 
 print(response)
 
+import time
+
 while True:
     output = get_item(job_id)
     print(output)
+    if output.get("status") == "completed":
+        break
+    time.sleep(1)

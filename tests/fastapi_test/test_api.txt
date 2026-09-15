@@ -1,0 +1,42 @@
+#ASYNC
+
+curl -X POST http://localhost:8000/api/async \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "ollama",
+    "model": "gemma4:cloud",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Hello"
+      }
+    ]
+  }'
+
+#Expected:
+
+{
+  "job_id": "xxx.",
+  "message": "Job queued successfully."
+}
+
+poll : 
+
+curl http://localhost:8000/<JOB_ID>
+
+
+
+# SYNC
+
+curl -X POST http://localhost:8000/api/sync \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "ollama",
+    "model": "gemma4:cloud",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Hello"
+      }
+    ]
+  }'
