@@ -1,0 +1,14 @@
+{
+    "input": {
+        "provider": "openrouter",
+        "model": "google/gemini-2.5-pro",
+        "messages": [
+            {
+                "role": "user",
+                "content": "Hello from OpenRouter"
+            }
+        ]
+    },
+    "status_code": 500,
+    "output": "Internal Server Error"
+}

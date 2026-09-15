@@ -1,3 +1,5 @@
+import json
+
 from fastapi import FastAPI
 
 from validation import Schema
@@ -7,8 +9,8 @@ from router import router
 app = FastAPI()
 
 
-@app.post("/api/poll_send")
-async def process_req(data: Schema): # validation fails return an 422 error automatically by fastapi.
+@app.post("/api/async")
+async def process_async(data: Schema): # validation fails return an 422 error automatically by fastapi.
     data_json = data.model_dump_json()
 
     worker = Worker()
@@ -16,11 +18,13 @@ async def process_req(data: Schema): # validation fails return an 422 error auto
 
     return "Successfully added to the queue for processing"
 
-@app.post("/api/direct_send")
-async def process_req(data: Schema):
+@app.post("/api/sync")
+async def process_sync(data: Schema):
     data_json = data.model_dump_json()
 
-    return router().route(data_json)
+    response = router().route(json.loads(data_json))
+
+    return response
 
 # USAGE : uv run python -m uvicorn main:app --reload
 

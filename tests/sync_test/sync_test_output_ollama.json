@@ -1,0 +1,21 @@
+{
+    "input": {
+        "provider": "ollama",
+        "model": "gemma4:cloud",
+        "messages": [
+            {
+                "role": "user",
+                "content": "Hello from Ollama"
+            }
+        ]
+    },
+    "status_code": 200,
+    "output": {
+        "role": "assistant",
+        "content": "Hello! It's great to meet you. It looks like you've got me up and running locally via Ollama.\n\nHow can I help you today?",
+        "thinking": null,
+        "images": null,
+        "tool_name": null,
+        "tool_calls": null
+    }
+}
