@@ -7,7 +7,8 @@ class Message(BaseModel):
     role : Literal ["system", 
                     "user", 
                     "assistant", 
-                    "developer"]
+                    "developer",
+                    "model"]
     content : str
 
 class Parameter(BaseModel):

@@ -1,4 +1,4 @@
-import json
+import uuid
 
 from fastapi import FastAPI
 
@@ -11,18 +11,25 @@ app = FastAPI()
 
 @app.post("/api/async")
 async def process_async(data: Schema): # validation fails return an 422 error automatically by fastapi.
-    data_json = data.model_dump_json()
+
+    job_id = str(uuid.uuid7())
 
     worker = Worker()
-    worker.produce_message(data_json)
+    worker.produce_message({
+        "job_id": job_id,
+        "data":  data.model_dump(),
+    })
 
-    return "Successfully added to the queue for processing"
+    return {"job_id": job_id,
+            "message": "Job queued successfully."}
+
+
 
 @app.post("/api/sync")
 async def process_sync(data: Schema):
-    data_json = data.model_dump_json()
+    data_dict = data.model_dump()
 
-    response = router().route(json.loads(data_json))
+    response = router().route(data_dict)
 
     return response
 

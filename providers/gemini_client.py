@@ -1,5 +1,5 @@
 from google import genai
-from google.genai import errors
+from google.genai import errors, types
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,9 +10,22 @@ class GeminiClient:
 
     def chat(self, model: str, messages: list[dict]) -> str:
         try:
+            contents = [
+                types.Content(
+                    role=message["role"],
+                    parts=[types.Part(text=message["content"])]
+                )
+                for message in messages
+            ]
+
             response = self.client.models.generate_content(
                 model=model,
-                contents=messages
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                        disable=True
+                    )
+                )
             )
             return response
 
@@ -26,7 +39,3 @@ class GeminiClient:
         except errors.APIError as e:
             print(f"gemini provider error ({e.code}): {e.message}")
             return []
-
-# if not any(model.name == model_str for model in models):
-#     print(f"Model '{model_str}' not found or unsupported")
-#     exit()
