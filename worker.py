@@ -2,9 +2,9 @@ from message_queue.producer import Producer
 from message_queue.consumer import Consumer
 
 class Worker:
-    def produce_message(self, message):
+    def produce_message(self, payload):
         self.producer = Producer()
-        self.producer.send_message(message)
+        self.producer.send_message(payload)
 
     def consume_message(self):
         self.consumer = Consumer()

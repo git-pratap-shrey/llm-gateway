@@ -1,6 +1,7 @@
 import json
 import pika
 from router import router
+from result_store import add_to_database
 
 class Consumer:
     def __init__(self):
@@ -22,9 +23,13 @@ class Consumer:
     def callback(self, ch, method, properties, body):
         print(f"Received: {body.decode()}")
 
-        router().route(json.loads(body.decode()))
+        body["response"] = router().route(body["data"])
+        body["status"] = "completed"
+
+        add_to_database(body)
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
+
 
     def close_connection(self):
         self.connection.close()

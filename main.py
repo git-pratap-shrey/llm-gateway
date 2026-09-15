@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from validation import Schema
 from worker import Worker
 from router import router
+from result_store import check_status
     
 app = FastAPI()
 
@@ -18,6 +19,7 @@ async def process_async(data: Schema): # validation fails return an 422 error au
     worker.produce_message({
         "job_id": job_id,
         "data":  data.model_dump(),
+        "status": "queued"
     })
 
     return {"job_id": job_id,
@@ -32,6 +34,13 @@ async def process_sync(data: Schema):
     response = router().route(data_dict)
 
     return response
+
+
+
+@app.get("/{job_id}")
+def get_item(job_id: str):
+    return check_status(job_id)
+
 
 # USAGE : uv run python -m uvicorn main:app --reload
 
