@@ -10,7 +10,7 @@ from result_store import result_store
 app = FastAPI()
 
 @app.post("/api/async")
-async def process_async(data: Schema): # validation fails return an 422 error automatically by fastapi.
+def process_async(data: Schema): # validation fails return an 422 error automatically by fastapi.
 
     job_id = str(uuid7())
 
@@ -27,7 +27,7 @@ async def process_async(data: Schema): # validation fails return an 422 error au
 
 
 @app.post("/api/sync")
-async def process_sync(data: Schema):
+def process_sync(data: Schema):
     data_dict = data.model_dump()
 
     response = Router().route(data_dict)
