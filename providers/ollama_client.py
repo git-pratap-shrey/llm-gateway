@@ -2,11 +2,12 @@ import os
 
 from dotenv import load_dotenv
 from ollama import Client, ResponseError
+from typing import Any
 
 load_dotenv()
 
 class OllamaClient:
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = Client(
             host="https://ollama.com",
             headers={
@@ -14,7 +15,7 @@ class OllamaClient:
             }
         )
 
-    def chat(self, model : str, messages : list[dict]) -> str:
+    def chat(self, model : str, messages : list[dict[str, Any]]) -> Any:
         try:
             response = self.client.chat(
                 model=model,

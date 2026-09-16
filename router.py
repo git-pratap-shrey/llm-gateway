@@ -1,5 +1,7 @@
+from typing import Any
+
 class Serve_ollama:
-    def serve(self, message):
+    def serve(self, message: dict[str, Any]) -> str:
         from providers.ollama_client import OllamaClient
 
         ollama_client = OllamaClient()
@@ -8,7 +10,7 @@ class Serve_ollama:
     
 
 class Serve_gemini:
-    def serve(self, message):
+    def serve(self, message: dict[str, Any]) -> str:
         from providers.gemini_client import GeminiClient
 
         gemini_client = GeminiClient()
@@ -17,7 +19,7 @@ class Serve_gemini:
 
     
 class Serve_openrouter:
-    def serve(self, message):
+    def serve(self, message: dict[str, Any]) -> str:
         from providers.openrouter_client import OpenrouterClient
 
         openrouter_client = OpenrouterClient()
@@ -26,7 +28,7 @@ class Serve_openrouter:
 
 
 class Router:
-    def route(self, message):
+    def route(self, message: dict[str, Any]) -> str:
         if(message["provider"] == "ollama"):
             return Serve_ollama().serve(message)
         

@@ -1,6 +1,7 @@
 from uuid6 import uuid7
 
 from fastapi import FastAPI
+from typing import Any, Dict
 
 from validation import Schema
 from worker import Worker
@@ -10,7 +11,7 @@ from result_store import result_store
 app = FastAPI()
 
 @app.post("/api/async")
-def process_async(data: Schema): # validation fails return an 422 error automatically by fastapi.
+def process_async(data: Schema) -> dict[str, str]: # validation fails return an 422 error automatically by fastapi.
 
     job_id = str(uuid7())
 
@@ -27,7 +28,7 @@ def process_async(data: Schema): # validation fails return an 422 error automati
 
 
 @app.post("/api/sync")
-def process_sync(data: Schema):
+def process_sync(data: Schema) -> Any:
     data_dict = data.model_dump()
 
     response = Router().route(data_dict)
@@ -37,7 +38,7 @@ def process_sync(data: Schema):
 
 
 @app.get("/{job_id}")
-def get_item(job_id: str):
+def get_item(job_id: str) -> dict[str, Any]:
     return result_store.check_status(job_id)
 
 

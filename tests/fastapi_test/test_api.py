@@ -20,7 +20,7 @@ payload = {
 }
 
 
-def test_async():
+def test_async() -> None:
     # Queue job
     response = client.post("/api/async", json=payload)
 
@@ -52,7 +52,7 @@ def test_async():
         pytest.fail("Job did not complete within 30 seconds")
 
 
-def test_sync():
+def test_sync() -> None:
     response = client.post("/api/sync", json=payload)
 
     assert response.status_code == 200

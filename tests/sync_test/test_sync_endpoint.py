@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import pytest
+from typing import Any
 
 # Add the root of the project to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
@@ -17,7 +18,7 @@ with open(INPUTS_FILE, "r") as f:
     test_payloads = json.load(f)
 
 @pytest.mark.parametrize("payload", test_payloads)
-def test_simulate_curl_sync_endpoint(payload):
+def test_simulate_curl_sync_endpoint(payload: dict[str, Any]) -> None:
     """
     Simulates a curl request to the /api/sync endpoint for each provider
     in the test_inputs.json file and saves the output.
@@ -48,3 +49,4 @@ def test_simulate_curl_sync_endpoint(payload):
         
     # Assert that the file was created successfully
     assert os.path.exists(output_file_path)
+
