@@ -2,8 +2,8 @@ import json
 import pika
 from typing import Any
 from router import Router
-from result_store import result_store
-
+from result_store.result_store import Result_store
+    
 class Consumer:
     def __init__(self) -> None:
         self.connection = pika.BlockingConnection(
@@ -29,7 +29,7 @@ class Consumer:
         payload["status"] = "completed"
 
         print(f"Processed: {payload}")
-        result_store.add_to_database(payload)
+        Result_store().add_to_database(payload)
         
         ch.basic_ack(delivery_tag=method.delivery_tag)
 

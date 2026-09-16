@@ -6,7 +6,7 @@ from typing import Any, Dict
 from validation import Schema
 from worker import Worker
 from router import Router
-from result_store import result_store
+from result_store.result_store import Result_store
     
 app = FastAPI()
 
@@ -39,7 +39,7 @@ def process_sync(data: Schema) -> Any:
 
 @app.get("/{job_id}")
 def get_item(job_id: str) -> dict[str, Any]:
-    return result_store.check_status(job_id)
+    return Result_store().check_status(job_id)
 
 
 # USAGE : uv run python -m uvicorn main:app --reload
