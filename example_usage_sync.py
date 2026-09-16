@@ -1,6 +1,5 @@
 import requests
 
-url = "http://localhost:8000/api/async"
 payload = {
     "provider": "ollama",
     "model": "gemma4:cloud",
@@ -11,5 +10,9 @@ payload = {
       }
     ]
 }
-res = requests.post(url, json=payload)
-print(res.status_code, res.text)
+
+## sync endpoint:
+
+response = requests.post("http://localhost:8000/api/sync", json=payload)
+
+print("--- Sync Endpoint ---", response.text)
