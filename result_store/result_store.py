@@ -13,6 +13,8 @@ class Result_store:
         with Session(self.engine) as session:
             result = Result(
                 job_id=payload["job_id"],
+                status=payload["status"],
+                response=str(payload.get("response", None)),
                 data=str(payload.get("data", None))
             )
             session.add(result)
