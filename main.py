@@ -15,11 +15,11 @@ def process_async(data: Schema) -> dict[str, str]: # validation fails return an 
 
     job_id = str(uuid7())
 
-    worker = Worker()
-    worker.produce_message({
+    Worker().produce_message({
         "job_id": job_id,
-        "data":  data.model_dump(),
-        "status": "queued"
+        "input":  data.model_dump(),
+        "status": "queued",
+        "output" : None
     })
 
     return {"job_id": job_id,

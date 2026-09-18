@@ -1,4 +1,5 @@
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 
@@ -67,3 +68,15 @@ def test_get_item():
         assert response.status_code == 200
         assert response.json() == {"status": "completed"}
         mock_store_instance.check_status.assert_called_once_with("00000000-0000-0000-0000-000000000000")
+
+def test_process_async_broker_unavailable():
+    with patch("main.Worker") as mock_worker_class:
+        mock_worker_class.return_value.produce_message.side_effect = HTTPException(
+            503, detail={"job_id": None, "message": "rabbitmq client not available"}
+        )
+
+        payload = {"provider": "ollama", "model": "gemma", "messages": [{"role": "user", "content": "hi"}]}
+        response = client.post("/api/async", json=payload)
+
+        assert response.status_code == 503
+        assert response.json()["detail"] == {"job_id": None, "message": "rabbitmq client not available"}

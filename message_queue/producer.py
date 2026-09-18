@@ -20,7 +20,7 @@ class Producer:
             )
         )
         
-        print(f"Sent: {message}")
+        print(f"Sent Job ID : {message["job_id"]} to queue.")
 
         self.close_connection()
 

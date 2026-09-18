@@ -13,3 +13,5 @@ wheels/
 
 # database files
 *.db
+
+presentation/

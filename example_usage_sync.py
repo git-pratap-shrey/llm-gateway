@@ -6,10 +6,11 @@ payload = {
     "messages": [
       {
         "role": "user",
-        "content": "Hello"
+        "content": "Hello there, this is obi wan"
       }
     ]
 }
+
 
 ## sync endpoint:
 
