@@ -1,3 +1,4 @@
+import logging
 import os
 
 from dotenv import load_dotenv
@@ -15,17 +16,17 @@ class OllamaClient:
             }
         )
 
-    def chat(self, model : str, messages : list[dict[str, Any]]) -> Any:
+    def chat(self, input: dict[str, Any]) -> Any:
         try:
             response = self.client.chat(
-                model=model,
-                messages=messages
+                model=input["model"],
+                messages=input["messages"]
             )
 
             return response
 
         except ResponseError as e:
-            print(f"Ollama error: {e}")
+            logging.error(f"Ollama error: {e}")
 
 
 # todo : parameters, persisitent client, failures

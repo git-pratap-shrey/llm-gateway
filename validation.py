@@ -1,3 +1,4 @@
+import logging
 """THE BASE PYDANTIC SCHEMA FOR THE REQUEST BODY OF THE FASTAPI GATEWAY INPUT ENDPOINT"""
 
 from pydantic import BaseModel, Field
@@ -28,7 +29,7 @@ class Schema(BaseModel):
 
 
 # USAGE :
-# print(Schema.model_dump())
+# logging.info(Schema.model_dump())
 
 # schema = Schema(
 #     provider="ollama",
@@ -37,7 +38,7 @@ class Schema(BaseModel):
 #         Message(role="user", content="Hello")
 #     ]
 # )
-# print(schema.model_dump_json())
+# logging.info(schema.model_dump_json())
 
 # schema = Schema.model_validate(dict_data)
 # schema = Schema.model_validate_json(json_data)

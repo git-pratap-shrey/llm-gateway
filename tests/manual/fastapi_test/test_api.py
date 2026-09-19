@@ -1,3 +1,4 @@
+import logging
 import time
 
 import pytest
@@ -41,7 +42,7 @@ def test_async() -> None:
 
         result = response.json()
 
-        print(result)
+        logging.info(result)
 
         if result.get("status") == "completed":
             break
@@ -57,4 +58,4 @@ def test_sync() -> None:
 
     assert response.status_code == 200
 
-    print(response.json())
+    logging.info(response.json())

@@ -14,8 +14,8 @@ class Result_store:
             result = Result(
                 job_id=payload["job_id"],
                 status=payload["status"],
-                response=str(payload.get("response", None)),
-                data=str(payload.get("data", None))
+                output=str(payload.get("output", None)),
+                input=str(payload.get("input", None))
             )
             session.add(result)
             session.commit()
@@ -26,9 +26,6 @@ class Result_store:
             row = session.exec(statement).first()
 
             if row is None:
-                return {
-                    "job_id": job_id,
-                    "status": "queued"
-                }
+                return row
 
             return row.model_dump()

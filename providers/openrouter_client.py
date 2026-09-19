@@ -1,3 +1,4 @@
+import logging
 from openrouter import OpenRouter
 import os
 
@@ -11,13 +12,13 @@ class OpenrouterClient:
             api_key=os.getenv("OPENROUTER_API_KEY")
         )
 
-    def chat(self, model: str, messages: list[dict[str, Any]]) -> Any:
+    def chat(self, input: dict[str, Any]) -> Any:
         try:
             response = self.client.chat.send(
-                model=model,
-                messages=messages
+                model=input["model"],
+                messages=input["messages"]
             )
             return response
 
         except Exception as e:
-            print(f"openrouter error: {e}")
+            logging.error(f"openrouter error: {e}")

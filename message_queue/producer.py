@@ -1,3 +1,4 @@
+import logging
 import pika
 import json
 from typing import Any
@@ -10,17 +11,17 @@ class Producer:
         self.channel = self.connection.channel()
         self.channel.queue_declare(queue="tasks", durable=True)
 
-    def send_message(self, message: dict[str, Any]) -> None:
+    def send_message(self, payload: dict[str, Any]) -> None:
         self.channel.basic_publish(
             exchange="",
             routing_key="tasks",
-            body=json.dumps(message),
+            body=json.dumps(payload),
             properties=pika.BasicProperties(
                 delivery_mode=pika.DeliveryMode.Persistent
             )
         )
         
-        print(f"Sent Job ID : {message["job_id"]} to queue.")
+        logging.info(f"Sent Job ID : {payload['job_id']} to queue.")
 
         self.close_connection()
 

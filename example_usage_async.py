@@ -1,3 +1,4 @@
+import logging
 import requests
 import time
 
@@ -25,8 +26,8 @@ if response.status_code == 200:
         poll_res = requests.get(poll_url)
         poll_data = poll_res.json()
         if poll_data.get("status") == "completed":
-            print("--- Async Endpoint ---")
-            print(f"ID: {poll_data.get('job_id')}")
-            print(f"Response: {poll_data.get('response')}")
+            logging.info("--- Async Endpoint ---")
+            logging.info(f"ID: {poll_data.get('job_id')}")
+            logging.info(f"Response: {poll_data.get('response')}")
             break
         time.sleep(1)

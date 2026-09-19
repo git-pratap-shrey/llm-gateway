@@ -1,3 +1,4 @@
+import logging
 import json
 import pika
 from typing import Any
@@ -18,17 +19,19 @@ class Consumer:
             on_message_callback=self.callback
         )
 
-        print("Waiting for messages...")
+        logging.info("Waiting for messages...")
         self.channel.start_consuming()
 
     def callback(self, ch: Any, method: Any, properties: Any, body: bytes) -> None:
-        print(f"Received: {body.decode()}")
-
         payload = json.loads(body.decode())
-        payload["response"] = Router().route(payload["data"])
+        logging.info(f"Received job ID {payload['job_id']} for processing.")
+
+        payload["output"] = Router().route(payload["input"])
+
         payload["status"] = "completed"
 
-        print(f"Processed: {payload}")
+        logging.info(f"Processed job ID {payload['job_id']}")
+        
         Result_store().add_to_database(payload)
         
         ch.basic_ack(delivery_tag=method.delivery_tag)

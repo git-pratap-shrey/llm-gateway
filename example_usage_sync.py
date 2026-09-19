@@ -1,3 +1,4 @@
+import logging
 import requests
 
 payload = {
@@ -16,4 +17,4 @@ payload = {
 
 response = requests.post("http://localhost:8000/api/sync", json=payload)
 
-print("--- Sync Endpoint ---", response.text)
+logging.info("--- Sync Endpoint ---", response.text)

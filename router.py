@@ -1,39 +1,43 @@
 from typing import Any
 
 class Serve_ollama:
-    def serve(self, message: dict[str, Any]) -> str:
+    def serve(self, input: dict[str, Any]) -> str:
         from providers.ollama_client import OllamaClient
 
         ollama_client = OllamaClient()
-        reply = ollama_client.chat(model=message["model"], messages=message["messages"])
+        reply = ollama_client.chat(model=input["model"], messages=input["messages"])
         return reply["message"]["content"]
+        return reply
     
 
 class Serve_gemini:
-    def serve(self, message: dict[str, Any]) -> str:
+    def serve(self, input: dict[str, Any]) -> str:
         from providers.gemini_client import GeminiClient
 
         gemini_client = GeminiClient()
-        reply = gemini_client.chat(model=message["model"], messages=message["messages"])
+        reply = gemini_client.chat(model=input["model"], messages=input["messages"])
         return reply.text
+        return reply
+    
 
     
 class Serve_openrouter:
-    def serve(self, message: dict[str, Any]) -> str:
+    def serve(self, input: dict[str, Any]) -> str:
         from providers.openrouter_client import OpenrouterClient
 
         openrouter_client = OpenrouterClient()
-        reply = openrouter_client.chat(model=message["model"], messages=message["messages"])
+        reply = openrouter_client.chat(model=input["model"], messages=input["messages"])
         return reply.choices[0].message.content
+        return reply
 
 
 class Router:
-    def route(self, message: dict[str, Any]) -> str:
-        if(message["provider"] == "ollama"):
-            return Serve_ollama().serve(message)
+    def route(self, input: dict[str, Any]) -> str:
+        if(input["provider"] == "ollama"):
+            return Serve_ollama().serve(input)
         
-        elif(message["provider"] == "gemini"):
-            return Serve_gemini().serve(message)
+        elif(input["provider"] == "gemini"):
+            return Serve_gemini().serve(input)
         
-        elif(message["provider"] == "openrouter"):
-            return Serve_openrouter().serve(message)
+        elif(input["provider"] == "openrouter"):
+            return Serve_openrouter().serve(input)

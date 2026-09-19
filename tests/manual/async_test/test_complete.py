@@ -1,3 +1,4 @@
+import logging
 from main import process_async, get_item
 from validation import Schema
 
@@ -15,13 +16,13 @@ response = process_async(schema)
 
 job_id = response["job_id"]
 
-print(response)
+logging.info(response)
 
 import time
 
 while True:
     output = get_item(job_id)
-    print(output)
+    logging.info(output)
     if output.get("status") == "completed":
         break
     time.sleep(1)
