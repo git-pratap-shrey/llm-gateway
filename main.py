@@ -38,7 +38,7 @@ def process_sync(data: Schema) -> Any:
 
 
 @app.get("/{job_id}")
-def get_item(job_id: str) -> dict[str, Any]:
+def get_item(job_id: str) -> dict[str, Any] | None:
     return Result_store().check_status(job_id)
 
 

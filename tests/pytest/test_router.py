@@ -65,4 +65,56 @@ def test_serve_ollama_internal():
         response = Serve_ollama().serve(message)
         
         assert response == "Ollama chat content"
-        mock_client_instance.chat.assert_called_once_with(model="gemma", messages=[{"role": "user", "content": "Hello"}])
+        mock_client_instance.chat.assert_called_once_with(message)
+
+def test_serve_gemini_internal():
+    from router import Serve_gemini
+
+    with patch("providers.gemini_client.GeminiClient") as mock_client_class:
+        mock_client_instance = MagicMock()
+        mock_client_class.return_value = mock_client_instance
+        mock_reply = MagicMock()
+        mock_reply.text = "Gemini chat content"
+        mock_client_instance.chat.return_value = mock_reply
+
+        message = {
+            "provider": "gemini",
+            "model": "gemini-pro",
+            "messages": [{"role": "user", "content": "Hello"}]
+        }
+
+        response = Serve_gemini().serve(message)
+
+        assert response == "Gemini chat content"
+        mock_client_instance.chat.assert_called_once_with(message)
+
+def test_serve_openrouter_internal():
+    from router import Serve_openrouter
+
+    with patch("providers.openrouter_client.OpenrouterClient") as mock_client_class:
+        mock_client_instance = MagicMock()
+        mock_client_class.return_value = mock_client_instance
+        mock_reply = MagicMock()
+        mock_reply.choices = [MagicMock()]
+        mock_reply.choices[0].message.content = "Openrouter chat content"
+        mock_client_instance.chat.return_value = mock_reply
+
+        message = {
+            "provider": "openrouter",
+            "model": "mistralai/mixtral-8x7b",
+            "messages": [{"role": "user", "content": "Hello"}]
+        }
+
+        response = Serve_openrouter().serve(message)
+
+        assert response == "Openrouter chat content"
+        mock_client_instance.chat.assert_called_once_with(message)
+
+def test_route_unknown_provider_returns_none():
+    message = {
+        "provider": "unknown",
+        "model": "gemma",
+        "messages": [{"role": "user", "content": "Hello"}]
+    }
+
+    assert Router().route(message) is None

@@ -5,7 +5,7 @@ class Serve_ollama:
         from providers.ollama_client import OllamaClient
 
         ollama_client = OllamaClient()
-        reply = ollama_client.chat(model=input["model"], messages=input["messages"])
+        reply = ollama_client.chat(input)
         return reply["message"]["content"]
         return reply
     
@@ -15,7 +15,7 @@ class Serve_gemini:
         from providers.gemini_client import GeminiClient
 
         gemini_client = GeminiClient()
-        reply = gemini_client.chat(model=input["model"], messages=input["messages"])
+        reply = gemini_client.chat(input)
         return reply.text
         return reply
     
@@ -26,7 +26,7 @@ class Serve_openrouter:
         from providers.openrouter_client import OpenrouterClient
 
         openrouter_client = OpenrouterClient()
-        reply = openrouter_client.chat(model=input["model"], messages=input["messages"])
+        reply = openrouter_client.chat(input)
         return reply.choices[0].message.content
         return reply
 
