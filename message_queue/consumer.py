@@ -4,7 +4,8 @@ import pika
 from typing import Any
 from router import Router
 from result_store.result_store import Result_store
-    
+from utils.logging_utils import job_log_file
+
 class Consumer:
     def __init__(self) -> None:
         self.connection = pika.BlockingConnection(
@@ -24,18 +25,27 @@ class Consumer:
 
     def callback(self, ch: Any, method: Any, properties: Any, body: bytes) -> None:
         payload = json.loads(body.decode())
-        logging.info(f"Received job ID {payload['job_id']} for processing.")
+        job_id = payload['job_id']
 
-        payload["output"] = Router().route(payload["input"])
+        with job_log_file(job_id):
+            logging.info(f"Received job ID {job_id} for processing.")
 
-        payload["status"] = "completed"
+            # Mark as processing in DB
+            Result_store().update_job(job_id, status="processing", output=None)
 
-        logging.info(f"Processed job ID {payload['job_id']}")
-        
-        Result_store().add_to_database(payload)
-        
+            payload["output"] = Router().route(payload["input"])
+
+            payload["status"] = "completed"
+
+            logging.info(f"Processed job ID {job_id}")
+
+            Result_store().update_job(job_id, status="completed", output=payload["output"])
+
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
+
+    def close_connection(self) -> None:
+        self.connection.close()
 
     def close_connection(self) -> None:
         self.connection.close()

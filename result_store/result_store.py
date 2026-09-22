@@ -9,16 +9,25 @@ class Result_store:
         self.engine = create_engine("sqlite:///result_db.db")
         SQLModel.metadata.create_all(self.engine)
 
-    def add_to_database(self, payload: dict[str, Any]) -> None:
+    def create_job(self, job_id: str, input_data: dict[str, Any]) -> None:
         with Session(self.engine) as session:
             result = Result(
-                job_id=payload["job_id"],
-                status=payload["status"],
-                output=str(payload.get("output", None)),
-                input=str(payload.get("input", None))
+                job_id=job_id,
+                status="queued",
+                data=str(input_data),
+                response=None
             )
             session.add(result)
             session.commit()
+
+    def update_job(self, job_id: str, status: str, output: Any) -> None:
+        with Session(self.engine) as session:
+            statement = select(Result).where(Result.job_id == job_id)
+            row = session.exec(statement).first()
+            if row:
+                row.status = status
+                row.response = str(output)
+                session.commit()
 
     def check_status(self, job_id: str) -> dict[str, Any]:
         with Session(self.engine) as session:
