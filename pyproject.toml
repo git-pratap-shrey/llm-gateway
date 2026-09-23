@@ -12,6 +12,7 @@ dependencies = [
     "openrouter>=1.1.140",
     "pika>=1.4.4",
     "sqlmodel>=0.0.42",
+    "typesafe-sdk>=0.7.1",
     "uuid6>=2025.0.1",
     "uvicorn>=0.53.0",
 ]
