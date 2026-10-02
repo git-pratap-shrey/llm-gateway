@@ -30,7 +30,7 @@ class Serve_openrouter:
 
         openrouter_client = OpenrouterClient()
         reply = openrouter_client.chat(input)
-        # return reply.choices[0].message.content
+        return reply.choices[0].message.content
         # return reply
 
 
