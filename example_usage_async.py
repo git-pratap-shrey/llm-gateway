@@ -31,3 +31,17 @@ if response.status_code == 200:
             logging.info(f"Response: {poll_data.get('response')}")
             break
         time.sleep(1)
+
+
+# curl -X POST https://lm-gateway.git-pratap-shrey.online/api/async \ 
+#   -H "Content-Type: application/json" \
+#   -d '{
+#     "provider": "ollama",
+#     "model": "gemma4:cloud",
+#     "messages": [
+#       {
+#         "role": "user",
+#         "content": "Hello, i am obi wan kenobi."
+#       }
+#     ]
+#   }'

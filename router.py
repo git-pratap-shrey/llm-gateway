@@ -1,5 +1,8 @@
 from typing import Any
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 class Serve_ollama:
     def serve(self, input: dict[str, Any]) -> str:
         from providers.ollama_client import OllamaClient
@@ -7,7 +10,7 @@ class Serve_ollama:
         ollama_client = OllamaClient()
         reply = ollama_client.chat(input)
         return reply["message"]["content"]
-        return reply
+        # return reply
     
 
 class Serve_gemini:
@@ -17,7 +20,7 @@ class Serve_gemini:
         gemini_client = GeminiClient()
         reply = gemini_client.chat(input)
         return reply.text
-        return reply
+        # return reply
     
 
     
@@ -27,17 +30,20 @@ class Serve_openrouter:
 
         openrouter_client = OpenrouterClient()
         reply = openrouter_client.chat(input)
-        return reply.choices[0].message.content
-        return reply
+        # return reply.choices[0].message.content
+        # return reply
 
 
 class Router:
     def route(self, input: dict[str, Any]) -> str:
         if(input["provider"] == "ollama"):
+            logging.info(f"ROUTER: Routing request to OLLAMA.")
             return Serve_ollama().serve(input)
         
         elif(input["provider"] == "gemini"):
+            logging.info(f"ROUTER: Routing request to GEMINI.")
             return Serve_gemini().serve(input)
         
-        elif(input["provider"] == "openrouter"):
+        else:
+            logging.info(f"ROUTER: Routing request to OPENROUTER.")
             return Serve_openrouter().serve(input)

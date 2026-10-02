@@ -14,11 +14,14 @@ class OpenrouterClient:
 
     def chat(self, input: dict[str, Any]) -> Any:
         try:
+            logging.info(f"Openrouter: Sending input to Openrouter.")
             response = self.client.chat.send(
                 model=input["model"],
                 messages=input["messages"]
             )
+            logging.info(f"Openrouter: Response received.")
             return response
 
         except Exception as e:
-            logging.error(f"openrouter error: {e}")
+            logging.error(f"Openrouter: Provider error: {e}")
+            raise

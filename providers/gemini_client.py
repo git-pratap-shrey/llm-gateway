@@ -20,6 +20,7 @@ class GeminiClient:
                 for message in input["messages"]
             ]
 
+            logging.info(f"Gemini: Sending input to Gemini.")
             response = self.client.models.generate_content(
                 model=input["model"],
                 contents=contents,
@@ -29,10 +30,12 @@ class GeminiClient:
                     )
                 )
             )
+            logging.info(f"Gemini: Response received.")
             return response
 
         except errors.APIError as e:
-            logging.error(f"gemini provider error ({e.code}): {e.message}")
+            logging.error(f"Gemini: Provider error ({e.code}): {e.message}")
+            raise
 
     def list_models(self) -> Any:
         try:

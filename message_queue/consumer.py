@@ -33,19 +33,20 @@ class Consumer:
             # Mark as processing in DB
             Result_store().update_job(job_id, status="processing", output=None)
 
-            payload["output"] = Router().route(payload["input"])
+            try:
+                payload["output"] = Router().route(payload["input"])
+                payload["status"] = "completed"
 
-            payload["status"] = "completed"
+                logging.info(f"Processed job ID {job_id}.")
 
-            logging.info(f"Processed job ID {job_id}")
+                Result_store().update_job(job_id, status="completed", output=payload["output"])
 
-            Result_store().update_job(job_id, status="completed", output=payload["output"])
+            except Exception as e:
+                logging.error(f"Failed to process job ID {job_id}: {e}")
+                Result_store().update_job(job_id, status="failed", output=None)
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-
-    def close_connection(self) -> None:
-        self.connection.close()
 
     def close_connection(self) -> None:
         self.connection.close()

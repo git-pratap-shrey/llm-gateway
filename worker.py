@@ -12,7 +12,7 @@ class Worker:
             self.producer.send_message(payload)
 
         except pika.exceptions.AMQPConnectionError as e:
-            logging.debug(f"RabbitMQ connection failed while producing message: {e}")
+            logging.error(f"RabbitMQ connection failed while producing message: {e}")
             raise HTTPException(503, 
                                 detail={"job_id": None, 
                                         "message": "rabbitmq client not available"}) 

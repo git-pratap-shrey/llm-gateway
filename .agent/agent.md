@@ -22,3 +22,17 @@ You are the Integration Architect for the `llm_gateway` project. Your primary re
 - **Provider Layer**: `providers/` (Contains adapter clients for Gemini, Ollama, OpenRouter, etc.)
 - **Messaging**: `worker.py` and `message_queue/` (RabbitMQ integration for async processing)
 - **Storage**: `result_store/` (SQLite-based storage for generated responses)
+
+## RULE: ALWAYS READ THESE FILES FOR CONTEXT.
+● (~/PROJECTS/llm_gateway/providers/gemini_client.py)
+● (~/PROJECTS/llm_gateway/providers/ollama_client.py)
+● (~/PROJECTS/llm_gateway/providers/openrouter_client.py)
+● (~/PROJECTS/llm_gateway/router.py)
+● (~/PROJECTS/llm_gateway/worker.py)
+● (~/PROJECTS/llm_gateway/message_queue/consumer.py)
+● (~/PROJECTS/llm_gateway/message_queue/producer.py)
+● (~/PROJECTS/llm_gateway/result_store/result_store.py)
+● (~/PROJECTS/llm_gateway/result_store/results_db.py)
+● (~/PROJECTS/llm_gateway/main.py)
+● (~/PROJECTS/llm_gateway/validation.py)
+● (~/PROJECTS/llm_gateway/utils/logging_utils.py)

@@ -18,15 +18,18 @@ class OllamaClient:
 
     def chat(self, input: dict[str, Any]) -> Any:
         try:
+            logging.info(f"Ollama: Sending input to Ollama.")
             response = self.client.chat(
                 model=input["model"],
                 messages=input["messages"]
             )
 
+            logging.info(f"Ollama: Response received.")
             return response
 
         except ResponseError as e:
-            logging.error(f"Ollama error: {e}")
+            logging.error(f"Ollama: Error occurred: {e}")
+            raise
 
 
 # todo : parameters, persisitent client, failures
