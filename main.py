@@ -1,5 +1,8 @@
 from uuid6 import uuid7
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from typing import Any
 
 from validation import Schema
@@ -7,11 +10,33 @@ from worker import Worker
 from router import Router
 from result_store.result_store import Result_store
 from utils.logging_utils import job_log_file
+from openai_facade import OpenAIHTTPError, openai_error_response, v1
 
 import logging
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
+app.include_router(v1)
+
+
+@app.exception_handler(OpenAIHTTPError)
+def openai_http_error_handler(_: Request, error: OpenAIHTTPError) -> JSONResponse:
+    return openai_error_response(error)
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_error_handler(request: Request, error: RequestValidationError):
+    """Give only the compatibility endpoint OpenAI-shaped validation errors."""
+    if request.url.path.startswith("/v1"):
+        return openai_error_response(
+            OpenAIHTTPError(
+                400,
+                "The request body is invalid.",
+                param="request",
+                code="invalid_request",
+            )
+        )
+    return await request_validation_exception_handler(request, error)
 
 @app.post("/api/async")
 def process_async(data: Schema) -> dict[str, str]: # validation fails return an 422 error automatically by fastapi.
