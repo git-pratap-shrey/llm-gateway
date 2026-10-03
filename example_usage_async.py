@@ -33,15 +33,6 @@ if response.status_code == 200:
         time.sleep(1)
 
 
-# curl -X POST https://lm-gateway.git-pratap-shrey.online/api/async \ 
-#   -H "Content-Type: application/json" \
-#   -d '{
-#     "provider": "ollama",
-#     "model": "gemma4:cloud",
-#     "messages": [
-#       {
-#         "role": "user",
-#         "content": "Hello, i am obi wan kenobi."
-#       }
-#     ]
-#   }'
+# curl -X POST "https://lm-gateway.git-pratap-shrey.online/api/async" -H "Content-Type: application/json" -d '{"provider":"ollama","model":"gemma4:cloud","messages":[{"role":"user","content":"Hello, i am obi wan kenobi."}]}'
+
+# curl -X GET https://lm-gateway.git-pratap-shrey.online/{job_id}

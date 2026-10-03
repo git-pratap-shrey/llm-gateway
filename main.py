@@ -64,9 +64,9 @@ def process_async(data: Schema) -> dict[str, str]: # validation fails return an 
         except HTTPException as e:
 
             # Mark as failed if queueing fails.
-            Result_store().update_job(job_id, status="failed", output=None)
+            Result_store().update_job(job_id, status="failed", output=None) 
 
-            raise e # raise since failure shouldn't be 200 OK.
+            raise e # raise since failure shouldn't be 200 OK, error code : 503 returned.
 
     return {"job_id": job_id,
             "message": "Job queued successfully."}
