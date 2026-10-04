@@ -1,4 +1,5 @@
 import logging
+import os
 import pika
 import json
 from typing import Any
@@ -6,7 +7,7 @@ from typing import Any
 class Producer:
     def __init__(self) -> None:
         self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host="localhost")
+            pika.ConnectionParameters(host=os.getenv("RABBITMQ_HOST", "localhost"))
         )
         self.channel = self.connection.channel()
         self.channel.queue_declare(queue="tasks", durable=True)

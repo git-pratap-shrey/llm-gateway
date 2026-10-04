@@ -1,5 +1,6 @@
 import logging
 import json
+import os
 import pika
 from typing import Any
 from router import Router
@@ -12,7 +13,7 @@ from message_queue.fallback import requeue, escalate_provider
 class Consumer:
     def __init__(self) -> None:
         self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host="localhost")
+            pika.ConnectionParameters(host=os.getenv("RABBITMQ_HOST", "localhost"))
         )
         self.channel = self.connection.channel()
         self.channel.queue_declare(queue="tasks", durable=True)

@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from typing import Any
 from sqlmodel import Field, SQLModel, Session, create_engine, select
 
@@ -6,7 +8,9 @@ from result_store.results_db import Result
 
 class Result_store:
     def __init__(self) -> None:
-        self.engine = create_engine("sqlite:///result_db.db")
+        db_path = os.getenv("RESULT_DB_PATH", "result_db.db")
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+        self.engine = create_engine(f"sqlite:///{db_path}")
         SQLModel.metadata.create_all(self.engine)
 
     def create_job(self, job_id: str, input_data: dict[str, Any]) -> None:
