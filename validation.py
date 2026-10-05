@@ -22,10 +22,11 @@ class Parameter(BaseModel):
     presence_penalty  : float | None = Field(default=None, ge=-2.0, le=2.0)
 
 class Schema(BaseModel):
-    provider : Literal ["gemini", "openrouter", "ollama"]
+    provider : Literal ["gemini", "openrouter", "ollama_cloud", "ollama_local"]
     model    : str
     messages  : list[Message] = Field(min_length=1)
     parameters : Parameter | None = None
+    stream     : bool = False
 
 
 # USAGE :

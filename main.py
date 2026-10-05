@@ -2,7 +2,7 @@ from uuid6 import uuid7
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from typing import Any
 
 from validation import Schema
@@ -83,9 +83,26 @@ def process_sync(data: Schema) -> Any:
         logging.info(f"FASTAPI: Sync job id generated: {job_id}.")
         logging.info(f"FASTAPI: Received input: {data_dict}.")
 
+        if data.stream:
+            def token_generator():
+                try:
+                    for chunk in Router().stream_route(data_dict):
+                        yield chunk
+                except Exception as e:
+                    logging.error(f"FASTAPI: Stream failed mid-response: {e}")
+                    raise
+
+            logging.info("FASTAPI: Returning streaming response.")
+            return StreamingResponse(token_generator(), media_type="text/plain")
+
         try:
             response = Router().route(data_dict)
         except Exception as e:
+            # Check if this is the missing local model error
+            if type(e).__name__ == "OllamaModelNotAvailableError":
+                logging.error(f"FASTAPI: Model not found locally: {e}")
+                raise HTTPException(status_code=404, detail={"job_id": job_id, "message": str(e)})
+
             logging.error(f"FASTAPI: Sync job failed: {e}")
             raise HTTPException(status_code=500, detail={"job_id": job_id, "message": "Job processing failed."})
 

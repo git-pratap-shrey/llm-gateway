@@ -1,6 +1,7 @@
 import logging
 import os
 
+from collections.abc import Iterator
 from dotenv import load_dotenv
 from ollama import Client, ResponseError
 from typing import Any
@@ -29,6 +30,22 @@ class OllamaClient:
 
         except ResponseError as e:
             logging.error(f"Ollama: Error occurred: {e}")
+            raise
+
+    def stream_chat(self, input: dict[str, Any]) -> Iterator[str]:
+        try:
+            logging.info("Ollama: Opening streaming request.")
+            for chunk in self.client.chat(
+                model=input["model"],
+                messages=input["messages"],
+                stream=True,
+            ):
+                token = chunk["message"]["content"]
+                if token:
+                    yield token
+            logging.info("Ollama: Stream complete.")
+        except ResponseError as e:
+            logging.error(f"Ollama: Stream error: {e}")
             raise
 
 

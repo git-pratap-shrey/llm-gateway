@@ -1,46 +1,58 @@
 import logging
-from google import genai
-from google.genai import errors, types
-from dotenv import load_dotenv
+import os
+from collections.abc import Iterator
 from typing import Any
+
+from dotenv import load_dotenv
+from openai import OpenAI
+
+from config import GEMINI_BASE_URL, GEMINI_API_KEY_ENV
 
 load_dotenv()
 
+
 class GeminiClient:
     def __init__(self) -> None:
-        self.client = genai.Client()
+        self.client = OpenAI(
+            api_key=os.environ[GEMINI_API_KEY_ENV],
+            base_url=GEMINI_BASE_URL,
+        )
 
     def chat(self, input: dict[str, Any]) -> Any:
         try:
-            contents = [
-                types.Content(
-                    role=message["role"],
-                    parts=[types.Part(text=message["content"])]
-                )
-                for message in input["messages"]
-            ]
-
-            logging.info(f"Gemini: Sending input to Gemini.")
-            response = self.client.models.generate_content(
+            logging.info("Gemini: Sending request.")
+            response = self.client.chat.completions.create(
                 model=input["model"],
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    automatic_function_calling=types.AutomaticFunctionCallingConfig(
-                        disable=True
-                    )
-                )
+                messages=input["messages"],
+                **(input.get("parameters") or {}),
             )
-            logging.info(f"Gemini: Response received.")
+            logging.info("Gemini: Response received.")
             return response
+        except Exception as e:
+            logging.error(f"Gemini: Error: {e}")
+            raise
 
-        except errors.APIError as e:
-            logging.error(f"Gemini: Provider error ({e.code}): {e.message}")
+    def stream_chat(self, input: dict[str, Any]) -> Iterator[str]:
+        try:
+            logging.info("Gemini: Opening streaming request.")
+            with self.client.chat.completions.create(
+                model=input["model"],
+                messages=input["messages"],
+                stream=True,
+                **(input.get("parameters") or {}),
+            ) as stream:
+                for chunk in stream:
+                    delta = chunk.choices[0].delta.content
+                    if delta:
+                        yield delta
+            logging.info("Gemini: Stream complete.")
+        except Exception as e:
+            logging.error(f"Gemini: Stream error: {e}")
             raise
 
     def list_models(self) -> Any:
         try:
-            models = self.client.models.list()
-            return models
-        except errors.APIError as e:
-            logging.error(f"gemini provider error ({e.code}): {e.message}")
+            return self.client.models.list()
+        except Exception as e:
+            logging.error(f"Gemini: list_models error: {e}")
             return []

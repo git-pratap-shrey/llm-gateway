@@ -7,12 +7,13 @@ well-defined subset of a Chat Completions request into the gateway's existing
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from typing import Any, Literal, get_args
 
 from fastapi import APIRouter
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from uuid6 import uuid7
 
@@ -139,8 +140,6 @@ def to_internal(req: ChatCompletionRequest) -> Schema:
 
     provider, model_name = _parse_model(req.model)
 
-    if req.stream:
-        raise _unsupported("stream")
     for field in ("tools", "tool_choice", "functions", "response_format"):
         if getattr(req, field) is not None:
             raise _unsupported(field)
@@ -179,6 +178,7 @@ def to_internal(req: ChatCompletionRequest) -> Schema:
             model=model_name,
             messages=messages,
             parameters=parameters or None,
+            stream=req.stream,
         )
     except ValidationError as exc:
         logger.info("OpenAI facade request rejected provider=%s model=%s", provider, model_name)
@@ -214,14 +214,65 @@ def _is_rate_limited(exc: Exception) -> bool:
     return status_code == 429
 
 
-@v1.post("/chat/completions")
-def chat_completions(req: ChatCompletionRequest) -> JSONResponse:
+def sse_chunk(model: str, delta: str, finish_reason: str | None = None) -> str:
+    """Build a single server-sent event frame in the OpenAI chat.completion.chunk shape."""
+    payload = {
+        "id": f"chatcmpl-{uuid7()}",
+        "object": "chat.completion.chunk",
+        "created": int(time.time()),
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "delta": {"role": "assistant", "content": delta} if delta else {},
+                "finish_reason": finish_reason,
+            }
+        ],
+    }
+    return f"data: {json.dumps(payload)}\n\n"
+
+
+@v1.post("/chat/completions", response_model=None)
+def chat_completions(req: ChatCompletionRequest) -> JSONResponse | StreamingResponse:
     schema = to_internal(req)
-    logger.info("OpenAI facade request provider=%s model=%s", schema.provider, schema.model)
+    logger.info(
+        "OpenAI facade request provider=%s model=%s stream=%s",
+        schema.provider, schema.model, schema.stream,
+    )
+
+    headers: dict[str, str] = {}
+    if req.model_extra:
+        headers["X-Gateway-Warnings"] = "Ignored fields: " + ", ".join(sorted(req.model_extra))
+
+    if req.stream:
+        def event_stream():
+            try:
+                for token in Router().stream_route(schema.model_dump()):
+                    yield sse_chunk(req.model, token)
+            except Exception as exc:
+                logger.error(
+                    "OpenAI facade stream error provider=%s model=%s exception_type=%s",
+                    schema.provider, schema.model, type(exc).__name__,
+                )
+                # HTTP 200 already sent — log and terminate the generator cleanly.
+                return
+            yield sse_chunk(req.model, "", finish_reason="stop")
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(event_stream(), media_type="text/event-stream", headers=headers)
 
     try:
         result = Router().route(schema.model_dump())
     except Exception as exc:
+        if type(exc).__name__ == "OllamaModelNotAvailableError":
+            logger.error("OpenAI facade missing model: %s", exc)
+            raise OpenAIHTTPError(
+                404,
+                str(exc),
+                error_type="invalid_request_error",
+                code="model_not_found",
+            ) from exc
+
         status_code = 429 if _is_rate_limited(exc) else 502
         code = "rate_limit_exceeded" if status_code == 429 else "upstream_error"
         logger.error(
@@ -246,7 +297,4 @@ def chat_completions(req: ChatCompletionRequest) -> JSONResponse:
             code="empty_response",
         )
 
-    headers: dict[str, str] = {}
-    if req.model_extra:
-        headers["X-Gateway-Warnings"] = "Ignored fields: " + ", ".join(sorted(req.model_extra))
     return JSONResponse(content=completion_response(req.model, result), headers=headers)
