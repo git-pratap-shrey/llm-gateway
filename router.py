@@ -16,15 +16,7 @@ class Serve_ollama_cloud:
         return OllamaCloudClient().stream_chat(input)
 
 
-class Serve_ollama_local:
-    def serve(self, input: dict[str, Any]) -> str:
-        from providers.ollama_local_client import OllamaLocalClient
-        reply = OllamaLocalClient().chat(input)
-        return reply.choices[0].message.content
 
-    def stream(self, input: dict[str, Any]) -> Iterator[str]:
-        from providers.ollama_local_client import OllamaLocalClient
-        return OllamaLocalClient().stream_chat(input)
 
 
 class Serve_gemini:
@@ -55,10 +47,6 @@ class Router:
             logging.info("ROUTER: Routing request to OLLAMA CLOUD.")
             return Serve_ollama_cloud().serve(input)
 
-        elif input["provider"] == "ollama_local":
-            logging.info("ROUTER: Routing request to OLLAMA LOCAL.")
-            return Serve_ollama_local().serve(input)
-
         elif input["provider"] == "gemini":
             logging.info("ROUTER: Routing request to GEMINI.")
             return Serve_gemini().serve(input)
@@ -71,10 +59,6 @@ class Router:
         if input["provider"] == "ollama_cloud":
             logging.info("ROUTER: Streaming request to OLLAMA CLOUD.")
             return Serve_ollama_cloud().stream(input)
-
-        elif input["provider"] == "ollama_local":
-            logging.info("ROUTER: Streaming request to OLLAMA LOCAL.")
-            return Serve_ollama_local().stream(input)
 
         elif input["provider"] == "gemini":
             logging.info("ROUTER: Streaming request to GEMINI.")

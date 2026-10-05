@@ -3,7 +3,7 @@ from main import process_async, get_item
 from validation import Schema
 
 schema = Schema(
-    provider="ollama",
+    provider="ollama_cloud",
     model="gemma4:cloud",
     messages=[
         {
