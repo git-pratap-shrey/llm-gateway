@@ -3,7 +3,7 @@ import requests
 import time
 
 payload = {
-    "provider": "ollama",
+    "provider": "ollama_cloud",
     "model": "gemma4:cloud",
     "messages": [
       {
@@ -14,13 +14,14 @@ payload = {
 }
 
 ## async endpoint:
-response = requests.post("http://localhost:8000/api/async", json=payload)
+response = requests.post("https://lm-gateway.git-pratap-shrey.online/api/async", json=payload)
 
+job_id = response.json()["job_id"]
+print(f"Async request initiated. Job ID: {job_id}")
 
 ## start polling for the result:
 if response.status_code == 200:
-    job_id = response.json()["job_id"]
-    poll_url = f"http://localhost:8000/{job_id}"
+    poll_url = f"https://lm-gateway.git-pratap-shrey.online/api/async/{job_id}"
     
     while True:
         poll_res = requests.get(poll_url)
@@ -31,6 +32,9 @@ if response.status_code == 200:
             logging.info(f"Response: {poll_data.get('response')}")
             break
         time.sleep(1)
+
+else:
+    logging.error(f"Failed to initiate async request: {response.status_code} - {response.text}")
 
 
 # curl -X POST "https://lm-gateway.git-pratap-shrey.online/api/async" -H "Content-Type: application/json" -d '{"provider":"ollama","model":"gemma4:cloud","messages":[{"role":"user","content":"Hello, i am obi wan kenobi."}]}'

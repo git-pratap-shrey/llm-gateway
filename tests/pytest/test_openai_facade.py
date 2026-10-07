@@ -13,7 +13,7 @@ client = TestClient(app)
 
 def request_payload(**overrides):
     payload = {
-        "model": "ollama/gemma4:cloud",
+        "model": "ollama_cloud/gemma4:cloud",
         "messages": [{"role": "user", "content": "Hello"}],
     }
     payload.update(overrides)
@@ -29,7 +29,15 @@ def test_model_is_split_on_first_slash_only():
     assert schema.model == "meta-llama/llama-3"
 
 
-@pytest.mark.parametrize("model", ["gemma", "/gemma", "ollama/", "unknown/gemma"])
+def test_model_gemini_provider():
+    schema = to_internal(
+        ChatCompletionRequest(**request_payload(model="gemini/gemma-4-31b-it"))
+    )
+    assert schema.provider == "gemini"
+    assert schema.model == "gemma-4-31b-it"
+
+
+@pytest.mark.parametrize("model", ["gemma", "/gemma", "ollama_cloud/", "unknown/gemma"])
 def test_invalid_model_is_an_openai_error(model):
     with pytest.raises(OpenAIHTTPError) as error:
         to_internal(ChatCompletionRequest(**request_payload(model=model)))
@@ -78,7 +86,6 @@ def test_translation_flattens_text_and_maps_parameters():
     [
         ({"messages": [{"role": "user", "content": [{"type": "image_url"}]}]}, "messages.content"),
         ({"messages": [{"role": "tool", "content": "Nope"}]}, "messages"),
-        ({"stream": True}, "stream"),
         ({"tools": []}, "tools"),
         ({"response_format": {"type": "json_object"}}, "response_format"),
         ({"n": 2}, "n"),
@@ -118,7 +125,7 @@ def test_chat_completion_response_and_ignored_field_warning():
     body = response.json()
     assert body["id"].startswith("chatcmpl-")
     assert body["object"] == "chat.completion"
-    assert body["model"] == "ollama/gemma4:cloud"
+    assert body["model"] == "ollama_cloud/gemma4:cloud"
     assert body["choices"] == [
         {
             "index": 0,
@@ -164,9 +171,17 @@ def test_rate_limit_and_empty_result_are_mapped():
     assert response.json()["error"]["code"] == "empty_response"
 
 
+def test_empty_string_response_is_also_rejected():
+    with patch("openai_facade.Router") as router_class:
+        router_class.return_value.route.return_value = ""
+        response = client.post("/v1/chat/completions", json=request_payload())
+    assert response.status_code == 502
+    assert response.json()["error"]["code"] == "empty_response"
+
+
 def test_v1_validation_uses_openai_error_and_api_validation_is_unchanged():
-    v1_response = client.post("/v1/chat/completions", json={"model": "ollama/gemma"})
-    api_response = client.post("/api/sync", json={"provider": "ollama"})
+    v1_response = client.post("/v1/chat/completions", json={"model": "ollama_cloud/gemma"})
+    api_response = client.post("/api/sync", json={"provider": "gemini"})
 
     assert v1_response.status_code == 400
     assert v1_response.json()["error"]["code"] == "invalid_request"
@@ -183,9 +198,44 @@ def test_stock_openai_client_can_parse_the_completion():
             http_client=client,
         )
         completion = sdk.chat.completions.create(
-            model="ollama/gemma4:cloud",
+            model="ollama_cloud/gemma4:cloud",
             messages=[{"role": "user", "content": "Hello"}],
         )
 
     assert completion.object == "chat.completion"
     assert completion.choices[0].message.content == "SDK answer"
+
+
+def test_model_not_found_maps_to_404():
+    """OllamaModelNotAvailableError from the router maps to an OpenAI-shaped 404."""
+
+    class OllamaModelNotAvailableError(Exception):
+        pass
+
+    with patch("openai_facade.Router") as router_class:
+        router_class.return_value.route.side_effect = OllamaModelNotAvailableError("model xyz not found")
+
+        response = client.post("/v1/chat/completions", json=request_payload())
+
+    assert response.status_code == 404
+    body = response.json()
+    assert body["error"]["code"] == "model_not_found"
+    assert "xyz" in body["error"]["message"]
+
+
+def test_streaming_response_content_type():
+    """A stream=True request returns text/event-stream."""
+    def token_iter():
+        yield "hello"
+        yield " world"
+
+    with patch("openai_facade.Router") as router_class:
+        router_class.return_value.stream_route.return_value = token_iter()
+
+        response = client.post(
+            "/v1/chat/completions",
+            json=request_payload(stream=True),
+        )
+
+    assert response.status_code == 200
+    assert "text/event-stream" in response.headers["content-type"]

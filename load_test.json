@@ -1,0 +1,7 @@
+{
+  "models": [
+    {"provider": "ollama_cloud", "model": "gemma4:cloud"},
+    {"provider": "openrouter", "model": "google/gemma-4-31b-it:free"},
+    {"provider": "gemini", "model": "gemma-4-31b-it"}
+  ]
+}
