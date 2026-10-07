@@ -19,6 +19,7 @@ class Consumer:
         self.channel.queue_declare(queue="tasks", durable=True)
 
     def start_consuming(self) -> None:
+        self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(
             queue="tasks",
             on_message_callback=self.callback

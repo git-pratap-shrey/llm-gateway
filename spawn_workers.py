@@ -12,6 +12,11 @@ import json
 from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime
+import os
+from dotenv import dotenv_values
+
+KEYS = [k.strip() for k in dotenv_values(".env")["OLLAMA_API_KEY"].split(",") if k.strip()]
+PIN = os.environ.get("PIN", "1") == "1"   # PIN=0 to run unpinned for A/B
 
 
 @dataclass
@@ -112,17 +117,21 @@ class WorkerManager:
         container_name = f"{self.project_name}_worker_{worker_id}"
         print(f"Spawning worker container {worker_id} ({container_name})...")
         
-        # Run docker container
+        pin_args = (
+            ["-e", f"OLLAMA_API_KEY={KEYS[(worker_id - 1) % len(KEYS)]}"] if PIN else []
+        )
+
         result = subprocess.run(
             [
                 "docker", "run",
                 "-d",  # Detached mode
                 "--name", container_name,
                 "--env-file", ".env",
+                *pin_args,  # overrides OLLAMA_API_KEY from .env with this worker's single key
                 "-e", "RABBITMQ_HOST=localhost",
                 "-e", "RESULT_DB_PATH=/app/data/result_db.db",
                 "--network", "host",
-                "-v", f"{subprocess.run(['pwd'], capture_output=True, text=True).stdout.strip()}/data:/app/data",
+                "-v", f"{os.getcwd()}/data:/app/data",
                 self.image_name,
                 "uv", "run", "worker.py"
             ],

@@ -415,9 +415,9 @@ class AsyncLLMLoadTester:
         
         return self.report
 
-
 async def main():
     """Main entry point for the load test."""
+    random.seed(42)
     import argparse
     
     parser = argparse.ArgumentParser(description="Load test the async LLM gateway")
