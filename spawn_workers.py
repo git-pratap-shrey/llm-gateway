@@ -81,7 +81,7 @@ class WorkerManager:
     
     def _handle_shutdown(self, signum, frame):
         """Handle shutdown signals."""
-        print(f"\n🛑 Received shutdown signal ({signal.Signals(signum).name})")
+        print(f"\nReceived shutdown signal ({signal.Signals(signum).name})")
         self.shutdown_requested = True
     
     def _ensure_image_built(self):
@@ -95,22 +95,22 @@ class WorkerManager:
         )
         
         if not result.stdout.strip():
-            print(f"📦 Building Docker image: {self.image_name}...")
+            print(f"Building Docker image: {self.image_name}...")
             build_result = subprocess.run(
                 ["docker", "compose", "-f", self.compose_file, "build", "worker"],
                 capture_output=False
             )
             if build_result.returncode != 0:
-                print("❌ Failed to build Docker image")
+                print("Failed to build Docker image")
                 sys.exit(1)
-            print("✓ Docker image built successfully")
+            print("Docker image built successfully")
         else:
-            print(f"✓ Docker image {self.image_name} exists")
+            print(f"Docker image {self.image_name} exists")
     
     def spawn_worker(self, worker_id: int) -> WorkerContainer:
         """Spawn a single worker container."""
         container_name = f"{self.project_name}_worker_{worker_id}"
-        print(f"🚀 Spawning worker container {worker_id} ({container_name})...")
+        print(f"Spawning worker container {worker_id} ({container_name})...")
         
         # Run docker container
         result = subprocess.run(
@@ -131,11 +131,11 @@ class WorkerManager:
         )
         
         if result.returncode != 0:
-            print(f"❌ Failed to spawn worker {worker_id}: {result.stderr}")
+            print(f"Failed to spawn worker {worker_id}: {result.stderr}")
             container_id = None
         else:
             container_id = result.stdout.strip()
-            print(f"✓ Worker {worker_id} started (Container ID: {container_id[:12]})")
+            print(f"Worker {worker_id} started (Container ID: {container_id[:12]})")
         
         worker = WorkerContainer(
             worker_id=worker_id,
@@ -169,11 +169,11 @@ class WorkerManager:
         for worker in self.workers:
             if not worker.is_running:
                 status = worker.status
-                print(f"⚠️  Worker {worker.worker_id} ({worker.container_name}) is {status}")
+                print(f"Worker {worker.worker_id} ({worker.container_name}) is {status}")
                 
                 if self.auto_restart and not self.shutdown_requested:
                     worker.restart_count += 1
-                    print(f"♻️  Restarting worker {worker.worker_id} (restart #{worker.restart_count})...")
+                    print(f"Restarting worker {worker.worker_id} (restart #{worker.restart_count})...")
                     
                     # Remove old container
                     subprocess.run(
@@ -199,7 +199,7 @@ class WorkerManager:
         
         for worker in self.workers:
             is_running = worker.is_running
-            status_icon = "🟢 RUNNING" if is_running else f"🔴 {worker.status.upper()}"
+            status_icon = "RUNNING" if is_running else f" {worker.status.upper()}"
             uptime = f"{worker.uptime:.1f}s" if is_running else "N/A"
             restarts = f" | Restarts: {worker.restart_count}" if worker.restart_count > 0 else ""
             container_id = worker.container_id[:12] if worker.container_id else "N/A"
@@ -209,7 +209,7 @@ class WorkerManager:
     
     def stop_workers(self):
         """Stop all worker containers gracefully."""
-        print("\n🛑 Stopping all workers...")
+        print("\nStopping all workers...")
         
         for worker in self.workers:
             if worker.is_running or worker.container_id:
@@ -253,7 +253,7 @@ class WorkerManager:
                 time.sleep(check_interval)
         
         except KeyboardInterrupt:
-            print("\n🛑 Interrupted by user")
+            print("\n Interrupted by user")
         
         finally:
             self.stop_workers()

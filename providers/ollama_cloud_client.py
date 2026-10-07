@@ -1,27 +1,26 @@
 import logging
-import os
 from collections.abc import Iterator
 from typing import Any
 
-from dotenv import load_dotenv
 from openai import OpenAI
 
-from config import OLLAMA_CLOUD_BASE_URL, OLLAMA_API_KEY_ENV
-
-load_dotenv()
+from config import OLLAMA_CLOUD_BASE_URL
+from providers.key_pool import KeyPool
 
 
 class OllamaCloudClient:
-    def __init__(self) -> None:
-        self.client = OpenAI(
-            api_key=os.environ[OLLAMA_API_KEY_ENV],
-            base_url=OLLAMA_CLOUD_BASE_URL,
-        )
+    def __init__(self, key_pool: KeyPool) -> None:
+        self._key_pool = key_pool
+        self._base_url = OLLAMA_CLOUD_BASE_URL
 
     def chat(self, input: dict[str, Any]) -> Any:
         try:
             logging.info("OllamaCloud: Sending request.")
-            response = self.client.chat.completions.create(
+            client = OpenAI(
+                api_key=self._key_pool.get_next(),
+                base_url=self._base_url,
+            )
+            response = client.chat.completions.create(
                 model=input["model"],
                 messages=input["messages"],
                 **(input.get("parameters") or {}),
@@ -35,7 +34,11 @@ class OllamaCloudClient:
     def stream_chat(self, input: dict[str, Any]) -> Iterator[str]:
         try:
             logging.info("OllamaCloud: Opening streaming request.")
-            with self.client.chat.completions.create(
+            client = OpenAI(
+                api_key=self._key_pool.get_next(),
+                base_url=self._base_url,
+            )
+            with client.chat.completions.create(
                 model=input["model"],
                 messages=input["messages"],
                 stream=True,

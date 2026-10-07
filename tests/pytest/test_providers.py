@@ -21,19 +21,27 @@ os.environ.setdefault("OPENROUTER_API_KEY", "test-openrouter-key")
 class TestOllamaCloudClient:
 
     @pytest.fixture()
+    def mock_key_pool(self):
+        """Create a mock KeyPool that returns a test key."""
+        from providers.key_pool import KeyPool
+        mock_pool = MagicMock(spec=KeyPool)
+        mock_pool.get_next.return_value = "test-api-key"
+        return mock_pool
+
+    @pytest.fixture()
     def mock_openai(self):
         with patch("providers.ollama_cloud_client.OpenAI") as mock_cls:
             mock_instance = MagicMock()
             mock_cls.return_value = mock_instance
             yield mock_instance
 
-    def test_chat_returns_response(self, mock_openai):
+    def test_chat_returns_response(self, mock_openai, mock_key_pool):
         from providers.ollama_cloud_client import OllamaCloudClient
 
         mock_reply = MagicMock()
         mock_openai.chat.completions.create.return_value = mock_reply
 
-        client = OllamaCloudClient()
+        client = OllamaCloudClient(mock_key_pool)
         result = client.chat({"model": "gemma4:cloud", "messages": [{"role": "user", "content": "hi"}]})
 
         assert result is mock_reply
@@ -42,12 +50,12 @@ class TestOllamaCloudClient:
             messages=[{"role": "user", "content": "hi"}],
         )
 
-    def test_chat_passes_parameters(self, mock_openai):
+    def test_chat_passes_parameters(self, mock_openai, mock_key_pool):
         from providers.ollama_cloud_client import OllamaCloudClient
 
         mock_openai.chat.completions.create.return_value = MagicMock()
 
-        client = OllamaCloudClient()
+        client = OllamaCloudClient(mock_key_pool)
         client.chat({
             "model": "gemma4:cloud",
             "messages": [],
@@ -58,15 +66,15 @@ class TestOllamaCloudClient:
         assert kwargs["temperature"] == 0.7
         assert kwargs["max_tokens"] == 100
 
-    def test_chat_raises_on_error(self, mock_openai):
+    def test_chat_raises_on_error(self, mock_openai, mock_key_pool):
         from providers.ollama_cloud_client import OllamaCloudClient
 
         mock_openai.chat.completions.create.side_effect = RuntimeError("upstream down")
 
         with pytest.raises(RuntimeError, match="upstream down"):
-            OllamaCloudClient().chat({"model": "gemma4:cloud", "messages": []})
+            OllamaCloudClient(mock_key_pool).chat({"model": "gemma4:cloud", "messages": []})
 
-    def test_stream_chat_yields_tokens(self, mock_openai):
+    def test_stream_chat_yields_tokens(self, mock_openai, mock_key_pool):
         from providers.ollama_cloud_client import OllamaCloudClient
 
         chunk1 = MagicMock()
@@ -81,20 +89,20 @@ class TestOllamaCloudClient:
         mock_stream.__exit__ = MagicMock(return_value=False)
         mock_openai.chat.completions.create.return_value = mock_stream
 
-        tokens = list(OllamaCloudClient().stream_chat({
+        tokens = list(OllamaCloudClient(mock_key_pool).stream_chat({
             "model": "gemma4:cloud",
             "messages": [],
         }))
 
         assert tokens == ["Hello", " world"]
 
-    def test_stream_chat_raises_on_error(self, mock_openai):
+    def test_stream_chat_raises_on_error(self, mock_openai, mock_key_pool):
         from providers.ollama_cloud_client import OllamaCloudClient
 
         mock_openai.chat.completions.create.side_effect = RuntimeError("stream error")
 
         with pytest.raises(RuntimeError):
-            list(OllamaCloudClient().stream_chat({"model": "gemma4:cloud", "messages": []}))
+            list(OllamaCloudClient(mock_key_pool).stream_chat({"model": "gemma4:cloud", "messages": []}))
 
 
 # ===========================================================================
@@ -104,27 +112,35 @@ class TestOllamaCloudClient:
 class TestGeminiClient:
 
     @pytest.fixture()
+    def mock_key_pool(self):
+        """Create a mock KeyPool that returns a test key."""
+        from providers.key_pool import KeyPool
+        mock_pool = MagicMock(spec=KeyPool)
+        mock_pool.get_next.return_value = "test-api-key"
+        return mock_pool
+
+    @pytest.fixture()
     def mock_openai(self):
         with patch("providers.gemini_client.OpenAI") as mock_cls:
             mock_instance = MagicMock()
             mock_cls.return_value = mock_instance
             yield mock_instance
 
-    def test_chat_returns_response(self, mock_openai):
+    def test_chat_returns_response(self, mock_openai, mock_key_pool):
         from providers.gemini_client import GeminiClient
 
         mock_reply = MagicMock()
         mock_openai.chat.completions.create.return_value = mock_reply
 
-        result = GeminiClient().chat({"model": "gemma-4-31b-it", "messages": []})
+        result = GeminiClient(mock_key_pool).chat({"model": "gemma-4-31b-it", "messages": []})
 
         assert result is mock_reply
 
-    def test_chat_passes_parameters(self, mock_openai):
+    def test_chat_passes_parameters(self, mock_openai, mock_key_pool):
         from providers.gemini_client import GeminiClient
 
         mock_openai.chat.completions.create.return_value = MagicMock()
-        GeminiClient().chat({
+        GeminiClient(mock_key_pool).chat({
             "model": "gemma-4-31b-it",
             "messages": [],
             "parameters": {"top_p": 0.9},
@@ -133,15 +149,15 @@ class TestGeminiClient:
         kwargs = mock_openai.chat.completions.create.call_args.kwargs
         assert kwargs["top_p"] == 0.9
 
-    def test_chat_raises_on_error(self, mock_openai):
+    def test_chat_raises_on_error(self, mock_openai, mock_key_pool):
         from providers.gemini_client import GeminiClient
 
         mock_openai.chat.completions.create.side_effect = ValueError("bad request")
 
         with pytest.raises(ValueError):
-            GeminiClient().chat({"model": "gemma-4-31b-it", "messages": []})
+            GeminiClient(mock_key_pool).chat({"model": "gemma-4-31b-it", "messages": []})
 
-    def test_stream_chat_yields_tokens(self, mock_openai):
+    def test_stream_chat_yields_tokens(self, mock_openai, mock_key_pool):
         from providers.gemini_client import GeminiClient
 
         chunk = MagicMock()
@@ -152,23 +168,23 @@ class TestGeminiClient:
         mock_stream.__exit__ = MagicMock(return_value=False)
         mock_openai.chat.completions.create.return_value = mock_stream
 
-        tokens = list(GeminiClient().stream_chat({"model": "gemma-4-31b-it", "messages": []}))
+        tokens = list(GeminiClient(mock_key_pool).stream_chat({"model": "gemma-4-31b-it", "messages": []}))
         assert tokens == ["token"]
 
-    def test_list_models_returns_result(self, mock_openai):
+    def test_list_models_returns_result(self, mock_openai, mock_key_pool):
         from providers.gemini_client import GeminiClient
 
         mock_openai.models.list.return_value = ["model-a", "model-b"]
 
-        result = GeminiClient().list_models()
+        result = GeminiClient(mock_key_pool).list_models()
         assert result == ["model-a", "model-b"]
 
-    def test_list_models_returns_empty_list_on_error(self, mock_openai):
+    def test_list_models_returns_empty_list_on_error(self, mock_openai, mock_key_pool):
         from providers.gemini_client import GeminiClient
 
         mock_openai.models.list.side_effect = RuntimeError("no models")
 
-        result = GeminiClient().list_models()
+        result = GeminiClient(mock_key_pool).list_models()
         assert result == []
 
 
@@ -179,26 +195,34 @@ class TestGeminiClient:
 class TestOpenrouterClient:
 
     @pytest.fixture()
+    def mock_key_pool(self):
+        """Create a mock KeyPool that returns a test key."""
+        from providers.key_pool import KeyPool
+        mock_pool = MagicMock(spec=KeyPool)
+        mock_pool.get_next.return_value = "test-api-key"
+        return mock_pool
+
+    @pytest.fixture()
     def mock_openai(self):
         with patch("providers.openrouter_client.OpenAI") as mock_cls:
             mock_instance = MagicMock()
             mock_cls.return_value = mock_instance
             yield mock_instance
 
-    def test_chat_returns_response(self, mock_openai):
+    def test_chat_returns_response(self, mock_openai, mock_key_pool):
         from providers.openrouter_client import OpenrouterClient
 
         mock_reply = MagicMock()
         mock_openai.chat.completions.create.return_value = mock_reply
 
-        result = OpenrouterClient().chat({"model": "meta-llama/llama-3", "messages": []})
+        result = OpenrouterClient(mock_key_pool).chat({"model": "meta-llama/llama-3", "messages": []})
         assert result is mock_reply
 
-    def test_chat_passes_parameters(self, mock_openai):
+    def test_chat_passes_parameters(self, mock_openai, mock_key_pool):
         from providers.openrouter_client import OpenrouterClient
 
         mock_openai.chat.completions.create.return_value = MagicMock()
-        OpenrouterClient().chat({
+        OpenrouterClient(mock_key_pool).chat({
             "model": "meta-llama/llama-3",
             "messages": [],
             "parameters": {"temperature": 0.5, "frequency_penalty": 0.1},
@@ -208,15 +232,15 @@ class TestOpenrouterClient:
         assert kwargs["temperature"] == 0.5
         assert kwargs["frequency_penalty"] == 0.1
 
-    def test_chat_raises_on_error(self, mock_openai):
+    def test_chat_raises_on_error(self, mock_openai, mock_key_pool):
         from providers.openrouter_client import OpenrouterClient
 
         mock_openai.chat.completions.create.side_effect = ConnectionError("network error")
 
         with pytest.raises(ConnectionError):
-            OpenrouterClient().chat({"model": "meta-llama/llama-3", "messages": []})
+            OpenrouterClient(mock_key_pool).chat({"model": "meta-llama/llama-3", "messages": []})
 
-    def test_stream_chat_yields_tokens(self, mock_openai):
+    def test_stream_chat_yields_tokens(self, mock_openai, mock_key_pool):
         from providers.openrouter_client import OpenrouterClient
 
         chunk = MagicMock()
@@ -227,10 +251,10 @@ class TestOpenrouterClient:
         mock_stream.__exit__ = MagicMock(return_value=False)
         mock_openai.chat.completions.create.return_value = mock_stream
 
-        tokens = list(OpenrouterClient().stream_chat({"model": "meta-llama/llama-3", "messages": []}))
+        tokens = list(OpenrouterClient(mock_key_pool).stream_chat({"model": "meta-llama/llama-3", "messages": []}))
         assert tokens == ["stream-token"]
 
-    def test_stream_chat_skips_empty_deltas(self, mock_openai):
+    def test_stream_chat_skips_empty_deltas(self, mock_openai, mock_key_pool):
         from providers.openrouter_client import OpenrouterClient
 
         chunks = []
@@ -244,15 +268,15 @@ class TestOpenrouterClient:
         mock_stream.__exit__ = MagicMock(return_value=False)
         mock_openai.chat.completions.create.return_value = mock_stream
 
-        tokens = list(OpenrouterClient().stream_chat({"model": "meta-llama/llama-3", "messages": []}))
+        tokens = list(OpenrouterClient(mock_key_pool).stream_chat({"model": "meta-llama/llama-3", "messages": []}))
         # Only non-empty, non-None tokens should be yielded
         assert tokens == ["a", "b"]
 
-    def test_stream_chat_raises_on_error(self, mock_openai):
+    def test_stream_chat_raises_on_error(self, mock_openai, mock_key_pool):
         from providers.openrouter_client import OpenrouterClient
 
         mock_openai.chat.completions.create.side_effect = RuntimeError("stream fail")
 
         with pytest.raises(RuntimeError):
-            list(OpenrouterClient().stream_chat({"model": "meta-llama/llama-3", "messages": []}))
+            list(OpenrouterClient(mock_key_pool).stream_chat({"model": "meta-llama/llama-3", "messages": []}))
 
