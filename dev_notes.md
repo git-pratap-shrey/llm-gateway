@@ -14,3 +14,10 @@
 
 ## 3: 
         should a poll on queued return 200 with status queued?
+        
+## 4: 
+        consistent management for logs and db (docker volume).
+        
+## 5: 
+        a dead letter queue that processes failed items.
+        

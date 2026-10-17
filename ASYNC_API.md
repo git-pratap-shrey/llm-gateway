@@ -288,6 +288,21 @@ The fallback ladder applies automatically — callers do not need to handle it.
 
 ---
 
+## Operational guarantees & stuck-job rescue
+
+- **Socket timeout (`OLLAMA_CLOUD_TIMEOUT = 120s`):** Remote provider calls are protected by a client-side timeout to prevent worker processes from hanging indefinitely.
+- **Consumer acknowledgement:** The worker acknowledges the RabbitMQ delivery tag in a `finally` block, preventing unhandled broker socket loss.
+- **Rescue CLI (`rescue_jobs.py`):** If a worker host is terminated while a job is in `processing`, administrators can unstick the database rows:
+  ```bash
+  # Reset stuck processing jobs back to queued for retry
+  uv run python rescue_jobs.py --queued --older-than 300
+
+  # Or mark them failed to release client polling loops
+  uv run python rescue_jobs.py --failed --older-than 300
+  ```
+
+---
+
 ## Provider reference
 
 | Provider key | Models (examples) |

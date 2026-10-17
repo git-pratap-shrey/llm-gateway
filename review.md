@@ -144,3 +144,24 @@ LiteLLM's proxy already does key pools, fallbacks and an OpenAI-compatible API. 
 3. Pick the response contract (Fork 1).
 4. Pass parameters through adapters and return warnings.
 5. Then retry and fallback, with the queue topology decided.
+
+---
+
+## 8. Status Update & Resolutions (Oct 2026)
+
+The following items from this review have been resolved in recent commits:
+
+- **Orphaned `queued` rows (Item 6):** `main.py` now wraps queue production in a broad `try...except Exception` handler that marks the DB row as `failed` before returning HTTP 500/503, preventing orphaned rows.
+- **Router fallthrough (Item 7):** `Router` enforces strict provider routing and raises an explicit error on unknown providers; `Schema.provider` is constrained to `Literal["gemini", "openrouter", "ollama_cloud"]`.
+- **Result store engine reuse (Item 8):** Module-level SQLModel engine is instantiated once rather than re-creating tables on every operation.
+- **OpenAI-compatible facade (Fork 1):** `POST /v1/chat/completions` implemented, supporting standard completions, SSE streaming (`stream=True`), and multimodal vision inputs (`image_url` parts).
+- **Streaming support:** Native token generator streaming on `/api/sync` and SSE chunks on `/v1/chat/completions`.
+- **Multimodal support:** `Message.content` supports `str | list[dict]` for vision models; `flatten_content` in facade preserves `image_url` while collapsing text-only arrays.
+- **Key pooling & worker pinning (Fork 7):** Thread-safe round-robin `KeyPool` (`providers/key_pool.py`) rotates comma-separated keys; `spawn_workers.py` allows pinning one key per worker container (`PIN=1`).
+- **Retry and fallback ladder (Fork 3):** Three-tier ladder (`ollama_cloud` → `openrouter` → `gemini`) implemented with state carried inside the message.
+- **Stuck job defense & recovery:**
+  - Added `OLLAMA_CLOUD_TIMEOUT = 120.0s` to prevent indefinite hangs on stalled provider connections.
+  - Consumer callback wraps execution in an outer `try...finally` ensuring delivery tag `basic_ack` is always sent to RabbitMQ.
+  - Added `rescue_jobs.py` CLI to reset or fail jobs stranded in `processing` state by inspecting UUIDv7 timestamp age.
+  - Added `republish_stuck.py` for direct re-queueing into RabbitMQ.
+- **Pre-flight health checking:** Added `check_keys.py` CLI to validate key authentication, models, and completions across all configured providers.

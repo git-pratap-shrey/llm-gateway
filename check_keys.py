@@ -6,11 +6,23 @@ Verifies connectivity, authentication, and completion capability across
 all configured API keys in .env (Ollama Cloud, Gemini, OpenRouter).
 
 Usage:
-    uv run python check_keys.py                     # Test completions across all keys
-    uv run python check_keys.py --fast              # Quick auth check (/models endpoint, <2s)
-    uv run python check_keys.py --provider ollama   # Test only Ollama keys
-    uv run python check_keys.py --provider gemini   # Test only Gemini keys
-    uv run python check_keys.py --provider openrouter
+    ./check_keys.py                                   # Full completion test for all provider keys
+    ./check_keys.py --fast                            # Fast auth/models check only (<2s)
+    ./check_keys.py --provider ollama                 # Test only Ollama keys
+    ./check_keys.py --provider gemini                 # Test only Gemini key
+    ./check_keys.py --provider openrouter             # Test only OpenRouter key
+    ./check_keys.py --provider ollama --fast          # Quick auth check for Ollama keys only
+    ./check_keys.py --timeout 30                      # Set custom timeout per request in seconds
+    ./check_keys.py --env-file /path/to/.env          # Specify custom .env file path
+
+Alternative with uv:
+    uv run python check_keys.py
+    uv run python check_keys.py --fast
+    uv run python check_keys.py --provider ollama
+
+Exit Codes:
+    0 — All tested keys are operational
+    1 — One or more keys failed or timed out
 """
 
 import argparse
@@ -23,7 +35,23 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Optional
 
-from dotenv import dotenv_values
+try:
+    from dotenv import dotenv_values
+except ImportError:
+    def dotenv_values(env_path: str = ".env") -> dict[str, str]:
+        env_dict = {}
+        if not os.path.exists(env_path):
+            return env_dict
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                k = k.strip()
+                v = v.strip().strip("'\"")
+                env_dict[k] = v
+        return env_dict
 
 # ANSI Colors
 GREEN = "\033[92m"

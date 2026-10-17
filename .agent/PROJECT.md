@@ -27,7 +27,10 @@ llm_gateway/
 ├── openai_facade.py         # OpenAI-compatible /v1/chat/completions endpoint
 ├── worker.py                # Worker entry-point (produce + consume)
 ├── spawn_workers.py         # Docker-based multi-worker manager (CLI)
-├── config.py                # Provider URLs, env var names, fallback order
+├── check_keys.py            # Pre-flight API key health and status check CLI
+├── rescue_jobs.py           # Unstick jobs stranded in 'processing' state (CLI)
+├── republish_stuck.py       # Re-publishes stuck jobs directly to RabbitMQ (script)
+├── config.py                # Provider URLs, timeout (120s), env var names, fallback order
 ├── message_queue/
 │   ├── producer.py          # Pika publisher → "tasks" queue (durable)
 │   ├── consumer.py          # Pika consumer with retry + fallback logic
@@ -121,13 +124,18 @@ POST /api/async
 Worker (consumer container)
     → Consumer.start_consuming()
     → callback():
-        ├── DB update: processing
-        ├── Router().route(input)
-        ├── success → DB update: completed + output
-        └── failure:
-            ├── retry_count < MAX_RETRIES → requeue same provider (retry_count++)
-            ├── escalate_provider() → requeue next provider (fallback_index++)
-            └── all exhausted → DB update: failed
+        ├── Outer try:
+        │   ├── with job_log_file(job_id):
+        │   │   ├── DB update: processing
+        │   │   ├── Router().route(input) (with OLLAMA_CLOUD_TIMEOUT=120s)
+        │   │   ├── success → DB update: completed + output
+        │   │   └── failure:
+        │   │       ├── retry_count < MAX_RETRIES → requeue same provider (retry_count++)
+        │   │       ├── escalate_provider() → requeue next provider (fallback_index++)
+        │   │       └── all exhausted → DB update: failed
+        │   └── outer exception: mark failed in DB (prevents unhandled stuck 'processing')
+        └── finally:
+            └── ch.basic_ack() — always acknowledges delivery tag to protect broker health
 
 GET /{job_id}
     → Result_store().check_status() → SQLite lookup
@@ -141,6 +149,7 @@ PRIORITY_3: gemini      / gemma-4-31b-it
 MAX_RETRIES = 3
 ```
 Within each tier, the job is retried up to `MAX_RETRIES` times before escalating to the next provider. Original provider is skipped in the fallback list.
+`config.OLLAMA_CLOUD_TIMEOUT = 120.0` prevents consumer workers from hanging indefinitely on network stalls.
 
 ---
 
@@ -169,6 +178,10 @@ Statuses: `queued → processing → completed | failed`
 ## Running the stack
 
 ```bash
+# Pre-flight API key health check
+uv run python check_keys.py --fast          # Quick connectivity/auth check (<2s)
+uv run python check_keys.py                 # Full completion check across all keys
+
 # Gateway (dev)
 uv run uvicorn main:app --reload
 
@@ -176,9 +189,14 @@ uv run uvicorn main:app --reload
 uv run python worker.py
 
 # Docker multi-worker (reads .env for OLLAMA_API_KEY pool)
-python spawn_workers.py -n 4
+uv run python spawn_workers.py -n 4
 # Flags: --no-restart, --check-interval, --status-interval, -f <compose-file>
-# PIN=0 python spawn_workers.py -n 4   # unpin keys (all workers share all keys)
+# PIN=0 uv run python spawn_workers.py -n 4   # unpin keys (all workers share all keys)
+
+# Stuck job recovery
+uv run python rescue_jobs.py --queued       # Reset stuck 'processing' jobs to 'queued'
+uv run python rescue_jobs.py --failed       # Mark stuck 'processing' jobs as 'failed'
+uv run python rescue_jobs.py --queued --older-than 300 --dry-run
 ```
 
 ---
@@ -201,5 +219,7 @@ python tests/multimodal/test_image_python.py [gateway_url] [model]
 1. **Provider clients don't need to change for multimodal** — they pass `messages` straight to the OpenAI SDK which handles vision natively.
 2. **`/v1/chat/completions` is synchronous** — it calls `Router().route()` directly without RabbitMQ. Async path is `/api/async`.
 3. **Worker key pinning** — `spawn_workers.py` assigns one Ollama API key per container (`PIN=1` default) by overriding the env var at `docker run` time, enabling per-key concurrency tracking.
-4. **`Schema.provider`** is a Literal — adding a new provider requires updating `validation.py`, `router.py`, `config.py`, and creating a new client in `providers/`.
-5. **`uuid7`** is used for all job IDs (time-sortable UUIDs).
+4. **Stuck-job defense-in-depth** — `OLLAMA_CLOUD_TIMEOUT` limits remote calls to 120s; consumer callback wraps work in outer `try...finally` with `ch.basic_ack` to ensure messages are not left in limbo; `rescue_jobs.py` provides administrative recovery for stranded DB rows.
+5. **`Schema.provider`** is a Literal — adding a new provider requires updating `validation.py`, `router.py`, `config.py`, and creating a new client in `providers/`.
+6. **`uuid7`** is used for all job IDs (time-sortable UUIDs).
+7. **`exclude_none=True` on serialization** — `data.model_dump(exclude_none=True)` ensures cleaner payloads in DB and queues without sparse `None` fields.
