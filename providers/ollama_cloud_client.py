@@ -5,7 +5,7 @@ from typing import Any
 
 from openai import OpenAI
 
-from config import OLLAMA_CLOUD_BASE_URL
+from config import OLLAMA_CLOUD_BASE_URL, OLLAMA_CLOUD_TIMEOUT
 from providers.key_pool import KeyPool
 
 
@@ -13,7 +13,8 @@ class OllamaCloudClient:
     def __init__(self, key_pool: KeyPool) -> None:
         self._key_pool = key_pool
         self._base_url = OLLAMA_CLOUD_BASE_URL
-        logging.debug(f"OllamaCloudClient: Initialized with base URL {self._base_url}")
+        self._timeout = OLLAMA_CLOUD_TIMEOUT
+        logging.debug(f"OllamaCloudClient: Initialized with base URL {self._base_url}, timeout={self._timeout}s")
 
     def chat(self, input: dict[str, Any]) -> Any:
         model = input.get("model", "unknown")
@@ -25,6 +26,7 @@ class OllamaCloudClient:
             client = OpenAI(
                 api_key=self._key_pool.get_next(),
                 base_url=self._base_url,
+                timeout=self._timeout,
             )
             response = client.chat.completions.create(
                 model=input["model"],
@@ -53,6 +55,7 @@ class OllamaCloudClient:
             client = OpenAI(
                 api_key=self._key_pool.get_next(),
                 base_url=self._base_url,
+                timeout=self._timeout,
             )
             with client.chat.completions.create(
                 model=input["model"],

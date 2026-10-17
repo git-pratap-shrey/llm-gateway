@@ -53,49 +53,60 @@ class Consumer:
         provider = payload.get("input", {}).get("provider", "unknown")
         model = payload.get("input", {}).get("model", "unknown")
 
-        with job_log_file(job_id):
-            logging.info(
-                f"Received job ID {job_id} "
-                f"(fallback={fallback_index}, retry={retry_count}/{config.MAX_RETRIES})."
-            )
-            logging.info(f"Consumer: Processing job ID {job_id} with provider '{provider}' and model '{model}'.")
+        try:
+            with job_log_file(job_id):
+                logging.info(
+                    f"Received job ID {job_id} "
+                    f"(fallback={fallback_index}, retry={retry_count}/{config.MAX_RETRIES})."
+                )
+                logging.info(f"Consumer: Processing job ID {job_id} with provider '{provider}' and model '{model}'.")
 
-            Result_store().update_job(job_id, status="processing", output=None)
+                Result_store().update_job(job_id, status="processing", output=None)
 
-            start_time = time.perf_counter()
+                start_time = time.perf_counter()
+                try:
+                    payload["output"] = Router().route(payload["input"])
+                    payload["status"] = "completed"
+                    elapsed = time.perf_counter() - start_time
+                    logging.info(f"Processed job ID {job_id} in {elapsed:.2f}s.")
+                    logging.info(f"Processed job ID {job_id}.")
+                    Result_store().update_job(job_id, status="completed", output=payload["output"])
+
+                except Exception as e:
+                    elapsed = time.perf_counter() - start_time
+                    logging.error(f"Failed job ID {job_id} after {elapsed:.2f}s (fallback={fallback_index}): {e}")
+                    logging.error(f"Failed job ID {job_id} (fallback={fallback_index}): {e}")
+
+                    if retry_count < config.MAX_RETRIES:
+                        payload["retry_count"] = retry_count + 1
+                        logging.info(
+                            f"Requeueing job ID {job_id} "
+                            f"(retry {retry_count + 1}/{config.MAX_RETRIES})."
+                        )
+                        Result_store().update_job(job_id, status="queued", output=None)
+                        requeue(self.channel, payload)
+
+                    elif escalate_provider(payload):
+                        logging.info(f"Consumer: Requeuing job ID {job_id} after provider escalation.")
+                        Result_store().update_job(job_id, status="queued", output=None)
+                        requeue(self.channel, payload)
+
+                    else:
+                        logging.error(f"All providers exhausted for job ID {job_id}. Marking failed.")
+                        Result_store().update_job(job_id, status="failed", output=None)
+
+        except Exception as outer_exc:
+            # Safety net: something outside the routing logic blew up (e.g. DB error, log file error).
+            # Always mark failed so the job doesn't stay stuck in 'processing'.
+            logging.error(f"Consumer: Unexpected outer error for job ID {job_id}: {outer_exc}")
             try:
-                payload["output"] = Router().route(payload["input"])
-                payload["status"] = "completed"
-                elapsed = time.perf_counter() - start_time
-                logging.info(f"Processed job ID {job_id} in {elapsed:.2f}s.")
-                logging.info(f"Processed job ID {job_id}.")
-                Result_store().update_job(job_id, status="completed", output=payload["output"])
+                Result_store().update_job(job_id, status="failed", output=None)
+            except Exception:
+                pass  # DB itself may be broken; don't let this prevent the ack
 
-            except Exception as e:
-                elapsed = time.perf_counter() - start_time
-                logging.error(f"Failed job ID {job_id} after {elapsed:.2f}s (fallback={fallback_index}): {e}")
-                logging.error(f"Failed job ID {job_id} (fallback={fallback_index}): {e}")
-
-                if retry_count < config.MAX_RETRIES:
-                    payload["retry_count"] = retry_count + 1
-                    logging.info(
-                        f"Requeueing job ID {job_id} "
-                        f"(retry {retry_count + 1}/{config.MAX_RETRIES})."
-                    )
-                    Result_store().update_job(job_id, status="queued", output=None)
-                    requeue(self.channel, payload)
-
-                elif escalate_provider(payload):
-                    logging.info(f"Consumer: Requeuing job ID {job_id} after provider escalation.")
-                    Result_store().update_job(job_id, status="queued", output=None)
-                    requeue(self.channel, payload)
-
-                else:
-                    logging.error(f"All providers exhausted for job ID {job_id}. Marking failed.")
-                    Result_store().update_job(job_id, status="failed", output=None)
-
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-        logging.debug(f"Consumer: Acknowledged delivery tag {method.delivery_tag} for job ID {job_id}.")
+        finally:
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+            logging.debug(f"Consumer: Acknowledged delivery tag {method.delivery_tag} for job ID {job_id}.")
 
     def close_connection(self) -> None:
         try:

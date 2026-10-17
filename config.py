@@ -13,6 +13,7 @@ MAX_RETRIES = 3
 
 # ── Provider base URLs ─────────────────────────────────────────────────────────
 OLLAMA_CLOUD_BASE_URL  = "https://ollama.com/v1"
+OLLAMA_CLOUD_TIMEOUT   = 120.0                        # seconds; prevents hung workers
 OLLAMA_LOCAL_BASE_URL  = "http://localhost:11434/v1"   # not yet active
 GEMINI_BASE_URL        = "https://generativelanguage.googleapis.com/v1beta/openai/"
 OPENROUTER_BASE_URL    = "https://openrouter.ai/api/v1"
