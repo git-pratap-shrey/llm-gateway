@@ -31,7 +31,8 @@ OLLAMA_API_KEY="key1,key2"
 GEMINI_API_KEY="key1"
 OPENROUTER_API_KEY="key1"
 RABBITMQ_HOST="localhost"
-RESULT_DB_PATH="result_db.db"
+RESULT_DB_PATH="data/result_db.db"
+LOG_DIR="logging"
 ```
 
 ### 2. Pre-Flight Key Health Check

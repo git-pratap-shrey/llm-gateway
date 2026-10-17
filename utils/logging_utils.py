@@ -2,7 +2,7 @@ import logging
 import os
 from contextlib import contextmanager
 
-LOG_DIR = "logging"
+LOG_DIR = os.getenv("LOG_DIR", "/logging" if os.path.exists("/logging") else "logging")
 
 @contextmanager
 def job_log_file(job_id: str):

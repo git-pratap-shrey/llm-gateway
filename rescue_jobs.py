@@ -13,7 +13,7 @@ Options:
     --dry-run     Print what would be changed without writing to the DB.
     --older-than  Only target jobs older than N seconds (default: 0 = all processing jobs).
                   Example: --older-than 300  (only jobs stuck for >5 minutes)
-    --db          Path to the SQLite DB (default: $RESULT_DB_PATH or result_db.db).
+    --db          Path to the SQLite DB (default: $RESULT_DB_PATH or data/result_db.db).
 """
 
 import argparse
@@ -68,9 +68,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--db",
-        default=os.getenv("RESULT_DB_PATH", "result_db.db"),
+        default=os.getenv("RESULT_DB_PATH", "data/result_db.db"),
         metavar="PATH",
-        help="Path to the SQLite DB file (default: $RESULT_DB_PATH or result_db.db).",
+        help="Path to the SQLite DB file (default: $RESULT_DB_PATH or data/result_db.db).",
     )
 
     return parser.parse_args()

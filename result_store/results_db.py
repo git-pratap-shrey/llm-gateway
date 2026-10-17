@@ -7,5 +7,7 @@ class Result(SQLModel, table=True):
     response: str | None = None
 
 if __name__ == "__main__":
-    engine = create_engine("sqlite:///result_db.db")
+    import os
+    db_path = os.getenv("RESULT_DB_PATH", "data/result_db.db")
+    engine = create_engine(f"sqlite:///{db_path}")
     SQLModel.metadata.create_all(engine)

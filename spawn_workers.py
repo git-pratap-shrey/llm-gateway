@@ -141,8 +141,10 @@ class WorkerManager:
                 *pin_args,  # overrides OLLAMA_API_KEY from .env with this worker's single key
                 "-e", "RABBITMQ_HOST=localhost",
                 "-e", "RESULT_DB_PATH=/app/data/result_db.db",
+                "-e", "LOG_DIR=/logging",
                 "--network", "host",
                 "-v", f"{os.getcwd()}/data:/app/data",
+                "-v", f"{os.getcwd()}/logging:/logging",
                 self.image_name,
                 "uv", "run", "worker.py"
             ],

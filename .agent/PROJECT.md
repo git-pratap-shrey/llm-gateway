@@ -155,7 +155,7 @@ Within each tier, the job is retried up to `MAX_RETRIES` times before escalating
 
 ## Result store (`result_store/`)
 
-SQLite via SQLModel. DB path from `RESULT_DB_PATH` env var (default: `result_db.db`).
+SQLite via SQLModel. DB path from `RESULT_DB_PATH` env var (default: `data/result_db.db`).
 
 **`Result` table columns:** `job_id (PK) | data (str) | status (str) | response (str|None)`
 
@@ -171,7 +171,8 @@ Statuses: `queued → processing → completed | failed`
 | `GEMINI_API_KEY` | `router.py` | Comma-separated → KeyPool |
 | `OPENROUTER_API_KEY` | `router.py` | Comma-separated → KeyPool |
 | `RABBITMQ_HOST` | producer + consumer | Default: `localhost` |
-| `RESULT_DB_PATH` | result_store | Default: `result_db.db` |
+| `RESULT_DB_PATH` | result_store | Default: `data/result_db.db` |
+| `LOG_DIR` | `utils/logging_utils.py` | Local: `logging`, Docker: `/logging` (shared volume) |
 
 ---
 

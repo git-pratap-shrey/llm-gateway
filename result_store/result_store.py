@@ -9,7 +9,7 @@ from result_store.results_db import Result
 
 class Result_store:
     def __init__(self) -> None:
-        db_path = os.getenv("RESULT_DB_PATH", "result_db.db")
+        db_path = os.getenv("RESULT_DB_PATH", "data/result_db.db")
         if db_path != ":memory:":
             Path(db_path).parent.mkdir(parents=True, exist_ok=True)
         self.engine = create_engine(f"sqlite:///{db_path}")
