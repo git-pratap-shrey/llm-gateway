@@ -10,7 +10,7 @@ class Message(BaseModel):
                     "assistant", 
                     "developer",
                     "model"]
-    content : str
+    content : str | list[dict]  # str for plain text; list[dict] for multimodal parts (text / image_url)
 
 class Parameter(BaseModel):
     temperature : float | None = Field(default=None, ge=0.0, le=2.0)

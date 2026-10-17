@@ -9,11 +9,17 @@ import signal
 import sys
 import time
 import json
+import logging
 from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime
 import os
 from dotenv import dotenv_values
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
 
 KEYS = [k.strip() for k in dotenv_values(".env")["OLLAMA_API_KEY"].split(",") if k.strip()]
 PIN = os.environ.get("PIN", "1") == "1"   # PIN=0 to run unpinned for A/B
@@ -86,6 +92,7 @@ class WorkerManager:
     
     def _handle_shutdown(self, signum, frame):
         """Handle shutdown signals."""
+        logging.info(f"WorkerManager: Received shutdown signal ({signal.Signals(signum).name})")
         print(f"\nReceived shutdown signal ({signal.Signals(signum).name})")
         self.shutdown_requested = True
     
@@ -106,15 +113,19 @@ class WorkerManager:
                 capture_output=False
             )
             if build_result.returncode != 0:
+                logging.error("WorkerManager: Failed to build Docker image")
                 print("Failed to build Docker image")
                 sys.exit(1)
+            logging.info("WorkerManager: Docker image built successfully")
             print("Docker image built successfully")
         else:
+            logging.info(f"WorkerManager: Docker image {self.image_name} exists")
             print(f"Docker image {self.image_name} exists")
     
     def spawn_worker(self, worker_id: int) -> WorkerContainer:
         """Spawn a single worker container."""
         container_name = f"{self.project_name}_worker_{worker_id}"
+        logging.info(f"WorkerManager: Spawning worker container {worker_id} ({container_name})...")
         print(f"Spawning worker container {worker_id} ({container_name})...")
         
         pin_args = (
@@ -140,10 +151,12 @@ class WorkerManager:
         )
         
         if result.returncode != 0:
+            logging.error(f"WorkerManager: Failed to spawn worker {worker_id}: {result.stderr}")
             print(f"Failed to spawn worker {worker_id}: {result.stderr}")
             container_id = None
         else:
             container_id = result.stdout.strip()
+            logging.info(f"WorkerManager: Worker {worker_id} started (Container ID: {container_id[:12]})")
             print(f"Worker {worker_id} started (Container ID: {container_id[:12]})")
         
         worker = WorkerContainer(
@@ -171,6 +184,7 @@ class WorkerManager:
             self.workers.append(worker)
             time.sleep(0.5)  # Small delay between spawns
         
+        logging.info(f"WorkerManager: All {self.num_workers} workers started")
         print(f"\n✓ All {self.num_workers} workers started\n")
     
     def check_workers(self):
@@ -178,10 +192,12 @@ class WorkerManager:
         for worker in self.workers:
             if not worker.is_running:
                 status = worker.status
+                logging.warning(f"WorkerManager: Worker {worker.worker_id} ({worker.container_name}) is {status}")
                 print(f"Worker {worker.worker_id} ({worker.container_name}) is {status}")
                 
                 if self.auto_restart and not self.shutdown_requested:
                     worker.restart_count += 1
+                    logging.info(f"WorkerManager: Restarting worker {worker.worker_id} (restart #{worker.restart_count})...")
                     print(f"Restarting worker {worker.worker_id} (restart #{worker.restart_count})...")
                     
                     # Remove old container
@@ -218,6 +234,7 @@ class WorkerManager:
     
     def stop_workers(self):
         """Stop all worker containers gracefully."""
+        logging.info("WorkerManager: Stopping all workers...")
         print("\nStopping all workers...")
         
         for worker in self.workers:
@@ -236,6 +253,7 @@ class WorkerManager:
                 capture_output=True
             )
         
+        logging.info("WorkerManager: All workers stopped.")
         print("\n✓ All workers stopped\n")
     
     def run(self, check_interval: float = 5.0, status_interval: float = 30.0):

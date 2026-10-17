@@ -35,6 +35,10 @@ def escalate_provider(payload: dict[str, Any]) -> bool:
 
     fallback_index = payload.get("fallback_index", 0)
     if fallback_index >= len(fallback_list):
+        logging.warning(
+            f"Fallback: All fallback tiers exhausted for job ID {payload.get('job_id')} "
+            f"({len(fallback_list)} provider(s) tried)."
+        )
         return False
 
     next_provider, next_model = fallback_list[fallback_index]

@@ -92,6 +92,7 @@ class ChatCompletionRequest(BaseModel):
 
 
 def _unsupported(param: str) -> OpenAIHTTPError:
+    logger.warning("OpenAI facade unsupported parameter requested: %s", param)
     return OpenAIHTTPError(
         400,
         f"'{param}' is not supported by this gateway.",
@@ -100,18 +101,51 @@ def _unsupported(param: str) -> OpenAIHTTPError:
     )
 
 
-def flatten_content(content: str | list[dict[str, Any]]) -> str:
-    """Convert OpenAI text parts to the string content expected by ``Schema``."""
+def flatten_content(content: str | list[dict[str, Any]]) -> str | list[dict[str, Any]]:
+    """Convert OpenAI content to the value expected by ``Schema``.
+
+    - Plain strings are returned unchanged.
+    - Lists that contain only ``text`` parts are collapsed into a single string
+      (preserving the previous behaviour for text-only messages).
+    - Lists that contain **any** non-text part (e.g. ``image_url``) are returned
+      as-is so that the provider's OpenAI-compatible SDK receives the full
+      multimodal content array.
+    """
 
     if isinstance(content, str):
         return content
 
+    has_non_text = any(part.get("type") != "text" for part in content)
+    if has_non_text:
+        # Validate each part minimally and pass the list through unchanged.
+        for part in content:
+            part_type = part.get("type")
+            if part_type == "text" and not isinstance(part.get("text"), str):
+                logger.warning("OpenAI facade invalid content: text part missing string 'text'")
+                raise OpenAIHTTPError(
+                    400,
+                    "Text message parts must include a string 'text' value.",
+                    param="messages",
+                    code="invalid_request",
+                )
+            if part_type == "image_url":
+                img = part.get("image_url")
+                if not isinstance(img, dict) or not isinstance(img.get("url"), str):
+                    logger.warning("OpenAI facade invalid content: image_url part missing 'url'")
+                    raise OpenAIHTTPError(
+                        400,
+                        "image_url parts must include an 'image_url.url' string.",
+                        param="messages",
+                        code="invalid_request",
+                    )
+        return content
+
+    # Text-only list: collapse to a single string (original behaviour).
     text_parts: list[str] = []
     for part in content:
-        if part.get("type") != "text":
-            raise _unsupported("messages.content")
         text = part.get("text")
         if not isinstance(text, str):
+            logger.warning("OpenAI facade invalid content: text part missing string 'text'")
             raise OpenAIHTTPError(
                 400,
                 "Text message parts must include a string 'text' value.",
@@ -122,10 +156,16 @@ def flatten_content(content: str | list[dict[str, Any]]) -> str:
     return "".join(text_parts)
 
 
+
 def _parse_model(model: str) -> tuple[str, str]:
     provider, separator, model_name = model.partition("/")
     if not separator or not provider or not model_name or provider not in SUPPORTED_PROVIDERS:
         providers = ", ".join(sorted(SUPPORTED_PROVIDERS))
+        logger.warning(
+            "OpenAI facade invalid model: '%s'. Must be '<provider>/<model>' with provider one of: %s",
+            model,
+            providers,
+        )
         raise OpenAIHTTPError(
             400,
             f"'model' must be '<provider>/<model>' with provider one of: {providers}.",
@@ -146,9 +186,14 @@ def to_internal(req: ChatCompletionRequest) -> Schema:
     if req.n is not None and req.n > 1:
         raise _unsupported("n")
 
-    messages: list[dict[str, str]] = []
+    messages: list[dict[str, Any]] = []
     for message in req.messages:
         if message.role not in SUPPORTED_ROLES:
+            logger.warning(
+                "OpenAI facade unsupported role: '%s'. Supported roles: %s",
+                message.role,
+                sorted(SUPPORTED_ROLES),
+            )
             raise OpenAIHTTPError(
                 400,
                 f"The message role '{message.role}' is not supported.",
@@ -242,25 +287,36 @@ def chat_completions(req: ChatCompletionRequest) -> JSONResponse | StreamingResp
 
     headers: dict[str, str] = {}
     if req.model_extra:
-        headers["X-Gateway-Warnings"] = "Ignored fields: " + ", ".join(sorted(req.model_extra))
+        ignored = ", ".join(sorted(req.model_extra))
+        logger.info("OpenAI facade ignoring extra fields: %s", ignored)
+        headers["X-Gateway-Warnings"] = "Ignored fields: " + ignored
 
     if req.stream:
         def event_stream():
+            chunk_count = 0
+            start_time = time.perf_counter()
             try:
                 for token in Router().stream_route(schema.model_dump()):
+                    chunk_count += 1
                     yield sse_chunk(req.model, token)
             except Exception as exc:
                 logger.error(
-                    "OpenAI facade stream error provider=%s model=%s exception_type=%s",
-                    schema.provider, schema.model, type(exc).__name__,
+                    "OpenAI facade stream error provider=%s model=%s exception_type=%s: %s",
+                    schema.provider, schema.model, type(exc).__name__, exc,
                 )
                 # HTTP 200 already sent — log and terminate the generator cleanly.
                 return
+            elapsed = time.perf_counter() - start_time
+            logger.info(
+                "OpenAI facade stream completed provider=%s model=%s chunks=%d duration=%.2fs",
+                schema.provider, schema.model, chunk_count, elapsed,
+            )
             yield sse_chunk(req.model, "", finish_reason="stop")
             yield "data: [DONE]\n\n"
 
         return StreamingResponse(event_stream(), media_type="text/event-stream", headers=headers)
 
+    start_time = time.perf_counter()
     try:
         result = Router().route(schema.model_dump())
     except Exception as exc:
@@ -276,10 +332,11 @@ def chat_completions(req: ChatCompletionRequest) -> JSONResponse | StreamingResp
         status_code = 429 if _is_rate_limited(exc) else 502
         code = "rate_limit_exceeded" if status_code == 429 else "upstream_error"
         logger.error(
-            "OpenAI facade upstream failure provider=%s model=%s exception_type=%s",
+            "OpenAI facade upstream failure provider=%s model=%s exception_type=%s: %s",
             schema.provider,
             schema.model,
             type(exc).__name__,
+            exc,
         )
         raise OpenAIHTTPError(
             status_code,
@@ -297,4 +354,9 @@ def chat_completions(req: ChatCompletionRequest) -> JSONResponse | StreamingResp
             code="empty_response",
         )
 
+    elapsed = time.perf_counter() - start_time
+    logger.info(
+        "OpenAI facade request completed successfully provider=%s model=%s duration=%.2fs",
+        schema.provider, schema.model, elapsed,
+    )
     return JSONResponse(content=completion_response(req.model, result), headers=headers)
